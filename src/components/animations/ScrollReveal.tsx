@@ -1,160 +1,131 @@
 'use client';
-import React, { useEffect, useRef, useMemo, ReactNode, RefObject, useState } from 'react';
+import React, { useEffect, useRef, RefObject, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface ScrollRevealProps {
-  children: ReactNode;
+  children: (string | { img: string; caption?: string })[];
   scrollContainerRef?: RefObject<HTMLElement>;
-  enableBlur?: boolean;
-  baseOpacity?: number;
-  baseRotation?: number;
-  blurStrength?: number;
   containerClassName?: string;
   textClassName?: string;
-  rotationEnd?: string;
-  wordAnimationEnd?: string;
 }
 
 const ScrollReveal: React.FC<ScrollRevealProps> = ({
                                                      children,
                                                      scrollContainerRef,
-                                                     enableBlur = true,
-                                                     baseOpacity = 0.1,
-                                                     baseRotation = 3,
-                                                     blurStrength = 4,
                                                      containerClassName = '',
                                                      textClassName = '',
-                                                     rotationEnd = 'bottom bottom',
-                                                     wordAnimationEnd = 'bottom bottom'
                                                    }) => {
   const containerRef = useRef<HTMLHeadingElement>(null);
   const [isMobile, setIsMobile] = useState(false);
 
-  // Détection mobile
+  // Mobile detection
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const splitText = useMemo(() => {
-    const text = typeof children === 'string' ? children : '';
-    return text.split(/(\s+)/).map((word, index) => {
-      if (word.match(/^\s+$/)) return word;
-      return (
-        <span className="inline-block word" key={index}>
-          {word}
-        </span>
-      );
-    });
-  }, [children]);
+  // Render parts (words + inline images)
+  const renderParts = children.map((part, index) => {
+    // STRING (words)
+    if (typeof part === 'string') {
+      return part.split(/(\s+)/).map((word, i) => {
+        if (word.match(/^\s+$/)) {
+          return <span key={`space-${index}-${i}`}>&nbsp;</span>;
+        }
 
+        return (
+          <span
+            key={`${index}-${i}`}
+            className="inline-block word px-[2px] leading-none"
+          >
+            {word}
+          </span>
+        );
+      });
+    }
+
+    // IMAGE
+    return (
+      <span
+        key={`img-${index}`}
+        className="inline-flex flex-col items-center mx-2 md:mx-3 image-wrapper"
+      >
+        <img
+          src={part.img}
+          alt=""
+          className="
+            rounded-xl md:rounded-2xl
+            object-cover
+            image-inline
+          "
+        />
+        {part.caption && (
+          <span className="text-xs opacity-70 mt-1 tracking-tight caption">
+            {part.caption}
+          </span>
+        )}
+      </span>
+    );
+  });
+
+  // GSAP reveal
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    const pinTarget = el.parentElement;
+    const elements = el.querySelectorAll('.word, .image-wrapper');
     const scroller = scrollContainerRef?.current ?? window;
 
-    // Pin plus court sur mobile
-    ScrollTrigger.create({
-      trigger: pinTarget,
-      start: "top top",
-      end: isMobile ? "bottom+=80% top" : "bottom+=120% top",
-      pin: pinTarget,
-      pinSpacing: true,
-      scrub: 1,
-      anticipatePin: 1
-    });
-
-    // Rotation désactivée sur mobile pour plus de lisibilité
-    if (!isMobile) {
-      gsap.fromTo(
-        el,
-        { transformOrigin: '0% 50%', rotate: baseRotation },
-        {
-          ease: 'none',
-          rotate: 0,
-          scrollTrigger: {
-            trigger: el,
-            scroller,
-            start: 'top 95%',
-            end: 'bottom -50%',
-            scrub: true
-          }
-        }
-      );
-    }
-
-    const wordElements = el.querySelectorAll<HTMLElement>('.word');
-
-    // Animation d'opacité adaptée
     gsap.fromTo(
-      wordElements,
-      { opacity: baseOpacity },
+      elements,
+      { opacity: 0, y: 20 },
       {
         opacity: 1,
-        ease: 'none',
-        stagger: isMobile ? 0.03 : 0.05, // Stagger plus rapide sur mobile
+        y: 0,
+        duration: 1.2,
+        stagger: 0.07,
+        ease: 'power2.out',
         scrollTrigger: {
           trigger: el,
           scroller,
-          start: isMobile ? 'top 90%' : 'top 100%',
-          end: isMobile ? 'bottom -20%' : 'bottom -60%',
-          scrub: true
-        }
+          start: 'top 85%',
+          end: 'bottom 10%',
+          scrub: 1,
+        },
       }
     );
-
-    // Blur adapté pour mobile
-    if (enableBlur) {
-      gsap.fromTo(
-        wordElements,
-        { filter: `blur(${isMobile ? blurStrength * 0.6 : blurStrength}px)` }, // Moins de blur sur mobile
-        {
-          filter: 'blur(0px)',
-          ease: 'none',
-          stagger: isMobile ? 0.03 : 0.05,
-          scrollTrigger: {
-            trigger: el,
-            scroller,
-            start: isMobile ? 'top 85%' : 'top bottom-=20%',
-            end: wordAnimationEnd,
-            scrub: true
-          }
-        }
-      );
-    }
-
-    return () => {
-      ScrollTrigger.getAll().forEach((t) => t.kill());
-    };
-  }, [isMobile, enableBlur, baseOpacity, baseRotation, blurStrength, wordAnimationEnd, scrollContainerRef]);
+  }, [scrollContainerRef]);
 
   return (
-    <h2 ref={containerRef} className={`my-5 ${containerClassName}`}>
-      <p className={` 
-        font-bold 
-        uppercase 
-        tracking-tight 
-        leading-[0.9] 
-        ${isMobile
-        ? 'text-[clamp(2rem,8vw,4rem)]'      
-        : 'text-[clamp(3rem,10vw,8rem)]'     
-      }
-        ${textClassName}
-      `}
-      >
-        {splitText}
-      </p>
-    </h2>
+    <section
+      className={`w-full px-8 sm:px-16 ${containerClassName}`}
+      style={{ backgroundColor: '#1c1c1c' }}
+    >
+      <h2 ref={containerRef} className="my-12">
+        <p
+          className={`
+            font-bold uppercase leading-[0.9] flex flex-wrap items-center gap-y-3 md:gap-y-4
+            ${isMobile ? 'text-[12vw]' : 'text-[7vw]'}
+            ${textClassName}
+          `}
+          style={{ color: '#E8E4DD' }}
+        >
+          {renderParts}
+        </p>
+      </h2>
+
+      <style>{`
+        .image-inline {
+          width: clamp(80px, 14vw, 180px);
+          height: clamp(40px, 7vw, 90px);
+        }
+      `}</style>
+    </section>
   );
 };
 

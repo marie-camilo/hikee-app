@@ -3,8 +3,12 @@ import { useEffect, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import SplitText from './animations/SplitText';
+import AnimatedWord from './animations/AnimatedWord';
 
 gsap.registerPlugin(ScrollTrigger);
+
+// Définition de la couleur pour référence
+const SLATE_COLOR = '#4A4A4A';
 
 export default function HeroSection() {
   const heroRef = useRef<HTMLDivElement>(null);
@@ -129,7 +133,6 @@ export default function HeroSection() {
                 textAlign="right"
               />
             </div>
-
           </div>
         </div>
       </div>
@@ -139,7 +142,8 @@ export default function HeroSection() {
         ref={sectionRef}
         className="relative w-full pt-32 md:pt-44 pb-8 bg-[#F5F3EF] z-20 md:rounded-t-[48px] white-section"
       >
-        <div className="w-full text-slate font-bold uppercase tracking-tight">
+        {/* L'attribut style est ajouté au div englobant le texte */}
+        <div className="w-full font-bold uppercase tracking-tight" style={{ color: SLATE_COLOR }}>
           <div className="text-[9vw] leading-none text-right pr-8 md:pr-16">
             <SplitText
               text="we've done all"

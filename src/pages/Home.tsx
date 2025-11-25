@@ -8,6 +8,9 @@ import SwipeSection from '../components/SwipeSection';
 import ImageGrid from '../components/ImgGrid';
 import ScrollReveal from '../components/animations/ScrollReveal';
 import HeroSection from '../components/HeroSection';
+import FeaturedSection from '../components/FeaturedSection';
+import HikeFeatureTiles from '../../HikeFeatureTiles';
+import HikeTilesWithButton from '../../HikeFeatureTiles';
 
 
 export default function Home() {
@@ -43,72 +46,31 @@ export default function Home() {
       hike.region.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const hikesData = [
-    { id: 1, title: 'Randonnée 1', image: '/images/hikeur.JPG' },
-    { id: 2, title: 'Randonnée 2', image: '/images/mountains.JPG' },
-    { id: 3, title: 'Randonnée 3', image: '/images/cerf.JPG' },
-  ];
-
-  const hikingImages = [
-    "/images/hikeur.JPG",
-    "/images/mountains.JPG",
-    "/images/cerf.JPG",
-  ];
-
   return (
     <div className="w-full overflow-hidden">
       <HeroSection />
 
-      <MountainLine images={hikingImages} />
+      <ImageGrid />
 
-      <ImageGrid
-        images={[
-          "/images/cerf.JPG",
-          "/images/mountains.JPG",
-          "/images/hikeur.JPG"
-        ]}
-        fromColor="#F5F3EF"
-        toColor="#000000"
-      />
-
-      <section className="relative min-h-screen bg-black text-white py-20 md:py-40">
+      <section className="relative min-h-screen bg-[#1c1c1c] text-white py-20 md:py-40">
         <div className="pin-container">
-          <ScrollReveal
-            baseOpacity={0}
-            enableBlur={true}
-            baseRotation={0}
-            blurStrength={10}
-            containerClassName="mx-auto px-6 text-left"
-          >
-            Adventure is not found on maps.
-            Adventure is shared between those who wander.
-            Hikee lets you discover trails,
-            deposit your own paths,
-            and explore the unseen corners of nature.
+          <ScrollReveal>
+            {[
+              "Walk through endless valleys",
+              { img: "/images/cerf.JPG", caption: "Valley of Silence" },
+              "discover new trails",
+              { img: "/images/hikeur.JPG" },
+              "and breathe",
+              { img: "/images/mountains.JPG", caption: "Cold Wind" },
+              "the pure air."
+            ]}
           </ScrollReveal>
         </div>
       </section>
 
-      <div className="w-full overflow-hidden">
-        <section className="relative bg-gradient-to-b from-slate-50 to-slate-100">
-          <CardStacking cards={hikesData} />
-        </section>
-        {/* Section HikeCards */}
-        <section className="py-16 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-6">
-            <h2 className="text-4xl font-bold mb-8 text-center">Découvrez les randos</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {filteredHikes.slice(0, 3).map(hike => (
-                <HikeCard key={hike.id} id={hike.id} title={hike.title} difficulty={hike.difficulty as 'easy'|'moderate'|'hard'} region={hike.region} image={hike.image}/>
-              ))}
-            </div>
-          </div>
-        </section>
+      <HikeTilesWithButton hikes={filteredHikes} />
 
-        {/*<section>*/}
-        {/*  <SwipeSection />*/}
-        {/*</section>*/}
-      </div>
+      <FeaturedSection />
     </div>
   );
 };

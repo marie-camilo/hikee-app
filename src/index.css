@@ -31,8 +31,6 @@
     --red: #e15145;
 
 
-
-
     /* === Couleurs principales === */
     --forest-dark: #2C3E2E;
     --sage: #7A9B76;
@@ -42,6 +40,7 @@
     --stone: #F5F3EF;
     --sand: #E8E4DD;
     --slate: #4A4A4A;
+    --black: #1c1c1c;
 
     /* === Couleurs d'accent === */
     --terracotta: #D87855;
@@ -67,8 +66,8 @@
 
 html, body {
     font-family: 'Montserrat', sans-serif;
-    background-color: var(--white);
-    color: var(--dark);
+    background-color: var(--sand);
+    color: var(--black);
     margin: 0;
     padding: 0;
     scroll-behavior: smooth;
