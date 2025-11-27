@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { collection, onSnapshot, DocumentData, QuerySnapshot } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import AnimatedSection from '../components/animations/AnimatedSection';
-import HikeFilterAndList from '../components/HikeFiltrerList';
+import HikeFilterAndList from '../components/hikes/HikeFiltrerList';
+import HikesHeroSection from '../components/hikes/HikesHeroSection';
 
 interface Hike {
   id: string
@@ -15,7 +16,6 @@ interface Hike {
 export default function HikeList() {
   const [hikes, setHikes] = useState<Hike[]>([])
 
-  // La logique de récupération des données reste ici
   useEffect(() => {
     const unsub = onSnapshot(
       collection(db, 'hikes'),
@@ -36,7 +36,6 @@ export default function HikeList() {
     return () => unsub()
   }, [])
 
-  // Conservez les sections pour AnimatedSection
   const heroSections = [
     {
       title: 'Discover New',
@@ -58,10 +57,13 @@ export default function HikeList() {
 
   return (
     <div className="w-full overflow-hidden">
-      {/* AnimatedSection ne se rend JAMAIS à nouveau, car ses props ne changent pas */}
-      <AnimatedSection sections={heroSections} />
-
-      {/* Le composant de la liste des filtres gère les changements d'état en interne */}
+      <HikesHeroSection
+        mainTitle="all hikes"
+        subtitle="Browse our complete collection of verified and tested routes, sorted by difficulty and region."
+        backgroundImage="https://images.unsplash.com/photo-1544198365-f5d60b6d8190?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        buttonText="explore"
+        buttonLink="#"
+      />
       <HikeFilterAndList hikes={hikes} />
     </div>
   );

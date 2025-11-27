@@ -423,7 +423,7 @@ export const StaggeredMenu: React.FC<StaggeredMenuProps> = ({
           aria-label="Main navigation header"
         >
           <div className="sm-logo flex items-center select-none pointer-events-auto" aria-label="Logo">
-            <a href="/" className="text-[1.8rem] md:text-2xl font-bold tracking-tight text-[#F5F3EF]">
+            <a href="/" className="text-[1.8rem] md:text-2xl font-bold tracking-tight text-[#4A4A4A]">
               hikee.
             </a>
           </div>

@@ -41,7 +41,7 @@ export default function HikeCard({ id, title, image, difficulty, region }: HikeC
         {region && <p className=" text-sm text-gray-500">{region}</p>}
 
         <div className="flex items-center justify-between text-sm text-[var(--lavander)] group-hover:text-[var(--corail)] transition-colors">
-          <span>Voir les détails</span>
+          <span>See détails</span>
           <div className="ml-2 w-8 h-8 flex items-center justify-center rounded-full bg-[var(--lavander)] text-white transition-all duration-300 group-hover:bg-[var(--corail)] group-hover:scale-110">
             <svg
               className="w-4 h-4"

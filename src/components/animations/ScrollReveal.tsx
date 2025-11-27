@@ -29,9 +29,7 @@ const ScrollReveal: React.FC<ScrollRevealProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Render parts (words + inline images)
   const renderParts = children.map((part, index) => {
-    // STRING (words)
     if (typeof part === 'string') {
       return part.split(/(\s+)/).map((word, i) => {
         if (word.match(/^\s+$/)) {

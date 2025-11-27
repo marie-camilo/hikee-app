@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from 'react';
 import { Outlet } from "react-router-dom";
-import Sidebar from "./Sidebar";
+import Sidebar from './Sidebar';
+import { Menu, X } from 'lucide-react';
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex flex-col md:flex-row mt-[100px]">
+    <div className="flex flex-col md:flex-row mt-[100px] min-h-[calc(100vh-100px)]">
 
       {/* Overlay mobile */}
       <div
@@ -18,20 +19,24 @@ export default function DashboardLayout() {
       <Sidebar
         className={`
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-          fixed top-0 left-0 h-screen z-50 w-72 bg-white shadow-md p-6 transform transition-transform
-          md:relative md:translate-x-0 md:h-screen md:z-30
+          md:relative md:translate-x-0 md:h-auto md:z-30
+          md:ml-6 
         `}
       />
 
       {/* Contenu principal */}
-      <main className="flex-1 p-6 bg-gray-50 rounded-xl md:ml-0">
-        {/* Mobile toggle button */}
-        <button
-          className="md:hidden mb-4 px-3 py-2 bg-[var(--orange)] text-white rounded-lg"
-          onClick={() => setSidebarOpen(true)}
-        >
-          Menu
-        </button>
+      <main className="flex-1 p-6 bg-[var(--stone)] rounded-xl md:ml-6">
+        {/* Mobile toggle button - hamburger moderne */}
+        <div className="md:hidden mb-6">
+          <button
+            className="px-3 py-2 bg-white text-gray-800 rounded-lg shadow-lg flex items-center gap-2"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+          >
+            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            <span className="font-medium">Dashboard Menu</span>
+          </button>
+        </div>
+
 
         <div className="max-w-7xl mx-auto">
           <Outlet />

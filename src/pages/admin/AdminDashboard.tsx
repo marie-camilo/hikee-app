@@ -116,7 +116,13 @@ export default function AdminDashboard() {
                   <h3 className="text-lg font-semibold mb-1">{hike.title}</h3>
                   <p className="text-gray-400 mb-3">{hike.region}</p>
                 </div>
-                <Button variant="orange" onClick={() => handleDeleteHike(hike.id)}>Supprimer</Button>
+                <Button
+                  variant="terracotta"
+                  size="md"
+                  onClick={() => handleDeleteHike(hike.id)}
+                >
+                  Supprimer
+                </Button>
               </div>
             ))
           )}
@@ -138,7 +144,13 @@ export default function AdminDashboard() {
                     <p className="font-medium">{c.text}</p>
                     <p className="text-gray-400 text-sm">Par : {c.userName || c.userId}</p>
                   </div>
-                  <Button variant="orange" onClick={() => handleDeleteComment(c.id)}>Supprimer</Button>
+                  <Button
+                    variant="terracotta"
+                    size="sm"
+                    onClick={() => handleDeleteComment(c.id)}
+                  >
+                    Supprimer
+                  </Button>
                 </li>
               ))}
             </ul>

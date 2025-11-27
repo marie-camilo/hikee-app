@@ -262,7 +262,7 @@ export default function CommentsSection({
 
   return (
     <div className="mt-8 bg-white shadow rounded-xl p-4 sm:p-6 space-y-4">
-      <h3 className="text-xl font-semibold">Commentaires</h3>
+      <h3 className="text-xl font-semibold">Comments</h3>
 
       {comments.length > 0 ? (
         <ul className="space-y-3">
@@ -294,14 +294,16 @@ export default function CommentsSection({
                         <Button
                           type="button"
                           onClick={() => saveEditComment(c.id)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
+                          variant="sage"
+                          size="md"
                         >
                           Sauvegarder
                         </Button>
                         <Button
                           type="button"
                           onClick={cancelEditingComment}
-                          className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
+                          variant="moss"
+                          size="md"
                         >
                           Annuler
                         </Button>
@@ -310,21 +312,23 @@ export default function CommentsSection({
                       <>
                         <Button
                           onClick={() => startEditingComment(c)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                          variant="sky"
+                          size="md"
                         >
                           Modifier
                         </Button>
                         {canComment && (
                           <Button
                             onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
-                            className="text-blue-500 hover:underline px-2 py-1 text-sm rounded"
+                            variant="moss"
+                            size="md"
                           >
                             {replyingTo === c.id ? 'Annuler' : 'Répondre'}
                           </Button>
                         )}
                         <button
                           onClick={() => deleteComment(c.id)}
-                          className="text-red-500 hover:text-red-700 p-2 rounded-full"
+                          className="text-slate-700 hover:text-red-700 p-2 rounded-full transition-colors cursor-pointer"
                           title="Supprimer ce commentaire"
                         >
                           <FiTrash size={20} />
@@ -346,7 +350,9 @@ export default function CommentsSection({
                   />
                   <Button
                     onClick={() => handleAddReply(c.id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                    variant="forest"
+                    size="md"
+                    arrow
                   >
                     Envoyer
                   </Button>
@@ -381,14 +387,18 @@ export default function CommentsSection({
                           editingReplyId === r.id ? (
                             <>
                               <Button
-                                onClick={() => saveEditReply(c.id, r.id)}
-                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
+                                type="button"
+                                onClick={() => saveEditComment(c.id)}
+                                variant="sage"
+                                size="md"
                               >
                                 Sauvegarder
                               </Button>
                               <Button
-                                onClick={cancelEditingReply}
-                                className="bg-gray-300 hover:bg-gray-400 text-black px-3 py-1 rounded"
+                                type="button"
+                                onClick={cancelEditingComment}
+                                variant="moss"
+                                size="md"
                               >
                                 Annuler
                               </Button>
@@ -396,14 +406,15 @@ export default function CommentsSection({
                           ) : (
                             <>
                               <Button
-                                onClick={() => startEditingReply(r)}
-                                className="text-blue-500 hover:underline text-sm px-2 py-1 rounded"
+                                onClick={() => startEditingComment(c)}
+                                variant="sky"
+                                size="sm"
                               >
                                 Modifier
                               </Button>
                               <button
                                 onClick={() => deleteReply(c.id, r.id)}
-                                className="text-red-500 hover:text-red-700 p-2 rounded-full"
+                                className="text-slate-700 hover:text-red-700 p-2 rounded-full transition-colors cursor-pointer"
                                 title="Supprimer cette réponse"
                               >
                                 <FiTrash size={16} />
@@ -436,8 +447,10 @@ export default function CommentsSection({
             maxLength={500}
           />
           <Button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+            onClick={() => handleAddReply(c.id)}
+            variant="forest"
+            size="md"
+            arrow
           >
             Envoyer
           </Button>

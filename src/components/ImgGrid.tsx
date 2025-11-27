@@ -1,80 +1,81 @@
-import React, { useState, useRef, useEffect } from 'react';
+'use client';
+
+import React, { useRef } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { useGSAP } from '@gsap/react';
+import { Link } from 'react-router-dom';
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
-// Types
 type GridItem = {
   id: number;
   type: 'image' | 'text' | 'video' | 'button';
   imageSrc?: string;
   videoSrc?: string;
   title?: string;
-  subtitle?: string;
   description?: string;
   buttonText?: string;
   accentColor?: string;
-  span?: { cols: number; rows: number };
 };
 
-// Arrow Icon
-const ArrowIcon: React.FC<{ color?: string }> = ({ color = '#FFFFFF' }) => (
-  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth={2.5}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+const ArrowIcon: React.FC = () => (
+  <svg
+    className="w-5 h-5 text-[#2C3E2E]"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth={2.5}
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
   </svg>
 );
 
-// Grid Data - Layout moderne et épuré
+
 const gridItems: GridItem[] = [
   {
     id: 1,
     type: 'text',
     title: 'ABOUT US',
-    description: "We are a community of hikers committed to simplifying your adventures. Our mission: accessible, sustainable, and unforgettable routes.",
+    description:
+      'We are a community of hikers committed to simplifying your adventures. Our mission: accessible, sustainable, and unforgettable routes.',
     buttonText: 'SEE OUR VALUES',
-    accentColor: '#E8E4DD',
-    span: { cols: 3, rows: 2 },
+    accentColor: '#dfddd7',
   },
   {
     id: 2,
     type: 'image',
-    imageSrc: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=800&q=80',
+    imageSrc: 'https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=800&q=80',
     title: 'TESTED ROUTES',
     description: 'Every trail is verified by our team for safety and accuracy.',
-    span: { cols: 2, rows: 2 },
   },
   {
     id: 3,
     type: 'image',
-    imageSrc: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80',
+    imageSrc: '/images/friends.webp',
     title: 'COMMUNITY',
     description: 'Join thousands of passionate hikers sharing their experiences.',
-    span: { cols: 1, rows: 1 },
   },
   {
     id: 4,
     type: 'video',
-    videoSrc: '/images/home-bg-video.mp4',
+    videoSrc: '/video/home-bg-video.mp4',
     title: 'FOCUS ON THE VIEW',
     description: 'Less planning, more exploring. Let us handle the details.',
-    span: { cols: 2, rows: 3 },
   },
   {
     id: 5,
     type: 'image',
-    imageSrc: 'https://images.unsplash.com/photo-1682687220742-aba13b6e50ba?w=800&q=80',
+    imageSrc: '/images/trio-hikes.webp',
     title: 'SHARE',
     description: 'Post photos and inspire the next adventurer.',
-    span: { cols: 1, rows: 1 },
   },
   {
     id: 6,
     type: 'image',
-    imageSrc: 'https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=800&q=80',
+    imageSrc: '/images/trailing.webp',
     title: 'DETAILED SPECS',
     description: 'Elevation, difficulty, and community tips at a glance.',
-    span: { cols: 1, rows: 1 },
   },
   {
     id: 7,
@@ -82,105 +83,139 @@ const gridItems: GridItem[] = [
     buttonText: 'FIND YOUR TRAIL',
     description: 'Start exploring now',
     accentColor: '#2C3E2E',
-    span: { cols: 2, rows: 1 },
   },
   {
     id: 8,
     type: 'image',
-    imageSrc: 'https://images.unsplash.com/photo-1445308394109-4ec2920981b1?w=800&q=80',
+    imageSrc: 'https://images.unsplash.com/photo-1754258683947-0cb7141baf37?q=80&w=686&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     title: 'DISCOVER',
     description: 'Find hidden gems and secret trails.',
-    span: { cols: 2, rows: 1 },
   },
 ];
 
-const InteractiveImageGrid: React.FC = () => {
-  const [activeId, setActiveId] = useState<number | null>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-  const itemsRef = useRef<(HTMLDivElement | null)[]>([]);
+interface InteractiveImageGridProps {
+  scrollToFeatured?: () => void;
+}
 
-  // Initial entrance animation
-  useEffect(() => {
-    if (gridRef.current) {
-      const ctx = gsap.context(() => {
-        gsap.fromTo(
-          itemsRef.current.filter(Boolean),
-          { opacity: 0, y: 60, scale: 0.95 },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 1,
-            stagger: 0.08,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: gridRef.current,
-              start: 'top 80%',
-              toggleActions: 'play none none none',
-            },
-          }
-        );
-      }, gridRef);
+const InteractiveImageGrid: React.FC<InteractiveImageGridProps> = ({ scrollToFeatured }) => {
+  const [isMobile, setIsMobile] = React.useState(false);
 
-      return () => ctx.revert();
-    }
+  React.useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Click interaction for images
-  const handleClick = (id: number, type: string) => {
-    if (type === 'image') {
-      setActiveId(activeId === id ? null : id);
+  const imgGridRef = useRef<HTMLElement>(null);
+
+  const getGridStyle = (index: number): React.CSSProperties => {
+    if (isMobile) {
+      const layouts = [
+        { gridColumn: '1 / 3' },
+        { gridColumn: '1 / 3' },
+        { gridColumn: '1 / 2' },
+        { gridColumn: '2 / 3' },
+        { gridColumn: '1 / 2' },
+        { gridColumn: '2 / 3' },
+        { gridColumn: '1 / 3' },
+        { gridColumn: '1 / 3' },
+      ];
+      return layouts[index] || {};
     }
+
+    const layouts = [
+      { gridColumn: '1 / 4', gridRow: '1 / 3' },
+      { gridColumn: '4 / 7', gridRow: '1 / 3' },
+      { gridColumn: '1 / 3', gridRow: '3 / 5' },
+      { gridColumn: '3 / 4', gridRow: '3 / 5' },
+      { gridColumn: '4 / 5', gridRow: '3 / 6' },
+      { gridColumn: '5 / 7', gridRow: '3 / 5' },
+      { gridColumn: '5 / 7', gridRow: '5 / 6' },
+      { gridColumn: '1 / 4', gridRow: '5 / 6' },
+    ];
+    return layouts[index] || {};
   };
+
+  useGSAP(() => {
+    const cards = imgGridRef.current?.querySelectorAll('.grid-item');
+
+    if (!cards || cards.length === 0) return;
+
+    gsap.fromTo(cards,
+      { y: 100, opacity: 0, scale: 0.94 },
+      {
+        y: 0,
+        opacity: 1,
+        scale: 1,
+        duration: 1.2,
+        ease: "power3.out",
+        stagger: 0.08,
+        scrollTrigger: {
+          trigger: imgGridRef.current,
+          start: "top 80%",
+          toggleActions: "play none none reverse",
+        }
+      }
+    );
+
+    gsap.to(imgGridRef.current, {
+      yPercent: -6,
+      ease: "none",
+      scrollTrigger: {
+        trigger: imgGridRef.current,
+        start: "top bottom",
+        end: "bottom top",
+        scrub: 0.6,
+      }
+    });
+  }, { scope: imgGridRef });
 
   return (
     <section
-      className="relative w-full pt-16 md:pt-24 pb-16 md:pb-24 px-8 sm:px-16 z-20"
+      ref={imgGridRef}
+      className="relative w-full pt-20 md:pt-32 pb-32 md:pb-44 px-8 sm:px-16 overflow-hidden white-section"
       style={{ backgroundColor: '#F5F3EF' }}
     >
+
       <div
-        ref={gridRef}
-        className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 auto-rows-[200px] gap-3 md:gap-4 w-full"
+        className="w-full"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile
+            ? 'repeat(2, 1fr)'
+            : 'repeat(6, minmax(0, 1fr))',
+          gridAutoRows: isMobile ? '160px' : '180px',
+          gap: isMobile ? '0.75rem' : '1rem',
+          marginLeft: isMobile ? 0 : '-1rem',
+          marginRight: isMobile ? 0 : '-1rem',
+          width: isMobile ? '100%' : 'calc(100% + 2rem)',
+        }}
       >
         {gridItems.map((item, index) => (
           <div
             key={item.id}
-            ref={(el) => (itemsRef.current[index] = el)}
-            className={`relative overflow-hidden group cursor-pointer transition-all duration-500 
-              ${item.span ? `col-span-${Math.min(item.span.cols, 2)} md:col-span-${item.span.cols} row-span-${item.span.rows}` : 'col-span-1 row-span-1'}`}
-            style={{
-              borderRadius: '24px',
-              transform: activeId === item.id ? 'scale(1.02)' : activeId && item.type === 'image' ? 'scale(0.98)' : 'scale(1)',
-              opacity: activeId && activeId !== item.id && item.type === 'image' ? 0.6 : 1,
-            }}
-            onClick={() => handleClick(item.id, item.type)}
+            className="grid-item relative overflow-hidden group cursor-pointer rounded-[1rem] will-change-transform"
+            style={getGridStyle(index)}
           >
             {/* TEXT CARD */}
             {item.type === 'text' && (
-              <div
-                className="w-full h-full p-6 md:p-8 flex flex-col justify-between"
-                style={{ backgroundColor: item.accentColor }}
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-semibold tracking-wider uppercase" style={{ color: '#4A4A4A' }}>
-                      {item.title}
-                    </span>
-                    <span className="text-xs font-normal" style={{ color: '#6B7280' }}>
-                      {item.subtitle}
-                    </span>
-                  </div>
-                  <p className="text-lg md:text-xl lg:text-2xl font-normal leading-relaxed" style={{ color: '#2C3E2E' }}>
+              <div className="w-full h-full p-6 md:p-8 lg:p-10 flex flex-col justify-between" style={{ backgroundColor: item.accentColor }}>
+              <div>
+                <span className="text-xs md:text-sm font-bold uppercase text-[#2C3E2E] block mb-6">
+                  {item.title}
+                </span>
+                  <p className="text-lg md:text-2xl lg:text-3xl font-light leading-[1.3] tracking-tight text-[#2C3E2E]">
                     {item.description}
                   </p>
                 </div>
                 <button
-                  className="self-start mt-4 px-5 py-2.5 rounded-full flex items-center gap-2 transition-all duration-300 hover:gap-3"
-                  style={{ backgroundColor: '#2C3E2E', color: '#FFFFFF' }}
+                  onClick={scrollToFeatured}
+                  className="self-start mt-6 px-6 py-3 rounded-full bg-[#2C3E2E] text-white flex items-center gap-3 hover:gap-5 transition-all duration-300"
                 >
-                  <span className="text-sm font-semibold">{item.buttonText}</span>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#FFFFFF' }}>
-                    <ArrowIcon color="#2C3E2E" />
+                  <span className="font-medium tracking-wide">{item.buttonText}</span>
+                  <div className="w-7 h-7 rounded-full bg-white flex items-center justify-center">
+                    <ArrowIcon />
                   </div>
                 </button>
               </div>
@@ -188,83 +223,55 @@ const InteractiveImageGrid: React.FC = () => {
 
             {/* IMAGE CARD */}
             {item.type === 'image' && (
-              <div className="w-full h-full relative">
+              <div className="relative w-full h-full overflow-hidden">
                 <img
                   src={item.imageSrc}
                   alt={item.title}
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                 />
-                <div
-                  className="absolute inset-0 transition-opacity duration-300"
-                  style={{
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0) 100%)',
-                    opacity: activeId === item.id ? 0.5 : 1,
-                  }}
-                />
-                {activeId === item.id && (
-                  <div className="absolute inset-0 border-4 rounded-[24px]" style={{ borderColor: '#FFFFFF' }} />
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                  <h3 className="text-base md:text-lg font-bold mb-1 uppercase tracking-wide" style={{ color: '#FFFFFF' }}>
-                    {item.title}
-                  </h3>
-                  <p className="text-xs md:text-sm font-normal leading-relaxed" style={{ color: '#FFFFFF', opacity: 0.9 }}>
-                    {item.description}
-                  </p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+                  <h3 className="text-base font-bold uppercase tracking-wider">{item.title}</h3>
+                  <p className="text-sm opacity-90 mt-1">{item.description}</p>
                 </div>
               </div>
             )}
 
             {/* VIDEO CARD */}
             {item.type === 'video' && (
-              <div className="w-full h-full relative">
+              <div className="relative w-full h-full">
                 <video
-                  className="absolute top-0 left-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-cover"
                   autoPlay
                   muted
                   loop
                   playsInline
                   src={item.videoSrc}
                 />
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0) 100%)',
-                  }}
-                />
-                <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                  <h3 className="text-base md:text-lg font-bold mb-1 uppercase tracking-wide" style={{ color: '#FFFFFF' }}>
-                    {item.title}
-                  </h3>
-                  <p className="text-xs md:text-sm font-normal leading-relaxed" style={{ color: '#FFFFFF', opacity: 0.9 }}>
-                    {item.description}
-                  </p>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+                  <h3 className="text-base font-bold uppercase tracking-wider">{item.title}</h3>
+                  <p className="text-sm opacity-90 mt-1">{item.description}</p>
                 </div>
               </div>
             )}
 
             {/* BUTTON CARD */}
             {item.type === 'button' && (
-              <button
-                className="w-full h-full px-6 md:px-8 flex items-center justify-between transition-all duration-300 hover:scale-[1.02]"
-                style={{ backgroundColor: item.accentColor }}
+              <Link
+                to="/hikes/list"
+                className="w-full h-full px-8 flex items-center justify-between bg-[#2C3E2E] hover:bg-[#3a4f3d] transition-colors duration-500 group rounded-lg"
               >
                 <div className="text-left">
-                  <span className="text-base md:text-lg lg:text-xl font-bold tracking-wide uppercase block" style={{ color: '#FFFFFF' }}>
-                    {item.buttonText}
-                  </span>
-                  <span className="text-xs md:text-sm font-normal" style={{ color: '#FFFFFF', opacity: 0.85 }}>
-                    {item.description}
-                  </span>
+                  <span className="text-lg font-bold text-white block">{item.buttonText}</span>
+                  <span className="text-sm text-white/80">{item.description}</span>
                 </div>
-                <div
-                  className="w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:translate-x-1"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
-                >
-                  <ArrowIcon color="#FFFFFF" />
+                <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <ArrowIcon />
                 </div>
-              </button>
+              </Link>
             )}
+
           </div>
         ))}
       </div>

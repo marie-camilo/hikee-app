@@ -30,7 +30,6 @@
     --yellow: #efb665;
     --red: #e15145;
 
-
     /* === Couleurs principales === */
     --forest-dark: #2C3E2E;
     --sage: #7A9B76;
@@ -66,7 +65,7 @@
 
 html, body {
     font-family: 'Montserrat', sans-serif;
-    background-color: var(--sand);
+    background-color: var(--stone);
     color: var(--black);
     margin: 0;
     padding: 0;

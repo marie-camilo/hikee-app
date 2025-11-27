@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { getDownloadURL, ref as storageRef } from 'firebase/storage';
-import { storage } from '../lib/firebase';
+import { storage } from '../../lib/firebase';
 
 interface HikeMapProps {
   gpxPath?: string | null;

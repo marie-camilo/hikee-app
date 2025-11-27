@@ -43,6 +43,8 @@ export default function HikeNew() {
     const [gpxFile, setGpxFile] = useState<File | null>(null)
     const [gpxPolyline, setGpxPolyline] = useState<[number, number][]>([])
 
+    const [showCustomRegion, setShowCustomRegion] = useState(false)
+
     const gpxInputRef = useRef<HTMLInputElement>(null)
     const imageInputRef = useRef<HTMLInputElement>(null)
 
@@ -139,8 +141,7 @@ export default function HikeNew() {
         const gpxRef = ref(storage, finalGpxPath)
         await uploadBytes(gpxRef, gpxFile)
       } else {
-        // Sinon, on peut uploader un GPX par défaut (si tu en as un dans /public ou ailleurs)
-        const defaultGpxUrl = '/default.gpx' // <- place ton fichier GPX par défaut dans public/
+        const defaultGpxUrl = '/default.gpx'
         const response = await fetch(defaultGpxUrl)
         const blob = await response.blob()
         finalGpxPath = `uploads/gpx/${user.uid}/${hikeRef.id}-default.gpx`
@@ -180,7 +181,7 @@ export default function HikeNew() {
     };
 
     return (
-    <div className="min-h-screen bg-gray-100 flex justify-center pt-32 pb-12">
+    <div className="min-h-screen  flex justify-center pt-32 pb-12">
         <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-5xl p-6 space-y-6 bg-white rounded-xl shadow-md">
             <h2 className="text-3xl font-bold mb-6 text-gray-800">Créer une nouvelle randonnée</h2>
 
@@ -209,15 +210,62 @@ export default function HikeNew() {
 
           {/* Région et Difficulté */}
           <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex flex-col">
-                  <label className="mb-2 font-semibold text-gray-700">Région</label>
+            <div className="flex flex-col">
+              <label className="mb-2 font-semibold text-gray-700">Région</label>
+
+              <select
+                {...register('region')}
+                onChange={(e) => {
+                  setValue('region', e.target.value)
+                  if (e.target.value !== 'other') {
+                    setShowCustomRegion(false)
+                  } else {
+                    setShowCustomRegion(true)
+                    setValue('region', '') // on vide pour que l'utilisateur tape
+                  }
+                }}
+                className="px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BB4C9] transition text-gray-700"
+              >
+                <option value="">Choisir une région</option>
+                <option value="Chamonix">Chamonix / Mont-Blanc</option>
+                <option value="Vercors">Vercors</option>
+                <option value="Chartreuse">Chartreuse</option>
+                <option value="Belledonne">Belledonne</option>
+                <option value="Bauges">Bauges</option>
+                <option value="Queyras">Queyras</option>
+                <option value="Écrins">Écrins</option>
+                <option value="Vanoise">Vanoise</option>
+                <option value="Maurienne">Maurienne</option>
+                <option value="Tarentaise">Tarentaise</option>
+                <option value="Oisans">Oisans</option>
+                <option value="Briançonnais">Briançonnais</option>
+                <option value="Val d’Aran">Val d’Aran (Espagne)</option>
+                <option value="Pyrénées Centrales">Pyrénées Centrales</option>
+                <option value="Corse">Corse (GR20)</option>
+                <option value="Massif Central">Massif Central</option>
+                <option value="Jura">Jura</option>
+                <option value="Vosges">Vosges</option>
+                <option value="other">Autre (préciser)</option>
+              </select>
+
+              {/* Champ personnalisé si "Autre" sélectionné */}
+              {showCustomRegion && (
+                <div className="mt-3 animate-in fade-in slide-in-from-top-2">
                   <input
-                    {...register('region')}
-                    placeholder="Ex: Alpes, Pyrénées"
-                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
+                    type="text"
+                    placeholder="Précisez la région (ex: Dévoluy, Aiguilles Rouges...)"
+                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8BB4C9] transition"
+                    onChange={(e) => setValue('region', e.target.value)}
+                    autoFocus
                   />
-                  {errors.region && <p className="text-red-600 text-sm mt-1">{errors.region.message}</p>}
-              </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Cette région sera utilisée pour afficher la météo. Choisissez un nom proche d’une ville si possible.
+                  </p>
+                </div>
+              )}
+
+              {errors.region && <p className="text-red-600 text-sm mt-1">{errors.region.message}</p>}
+            </div>
               <div className="flex flex-col">
                   <label className="mb-2 font-semibold text-gray-700">Difficulté</label>
                   <select

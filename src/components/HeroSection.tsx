@@ -75,7 +75,7 @@ export default function HeroSection() {
           loop
           playsInline
         >
-          <source src="/images/home-bg-video.mp4" type="video/mp4" />
+          <source src="/video/home-bg-video.mp4" type="video/mp4" />
         </video>
 
         <div className="absolute top-0 left-0 w-full h-full flex flex-col justify-center px-8 sm:px-16">
@@ -140,9 +140,8 @@ export default function HeroSection() {
       {/* Section Hard Work */}
       <section
         ref={sectionRef}
-        className="relative w-full pt-32 md:pt-44 pb-8 bg-[#F5F3EF] z-20 md:rounded-t-[48px] white-section"
+        className="relative w-full pt-32 md:pt-44 pb-8 bg-[#F5F3EF] z-20 md:rounded-t-[48px]"
       >
-        {/* L'attribut style est ajouté au div englobant le texte */}
         <div className="w-full font-bold uppercase tracking-tight" style={{ color: SLATE_COLOR }}>
           <div className="text-[9vw] leading-none text-right pr-8 md:pr-16">
             <SplitText

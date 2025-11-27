@@ -6,17 +6,14 @@ gsap.registerPlugin(ScrollTrigger);
 
 // --- Définitions des Couleurs Centralisées ---
 const COLORS_MAP = {
-  // 1. Nouvelle couleur de fond de la section (Stone)
   'background': '#F5F3EF',
-  // 2. Nouvelle couleur pour tout ce qui était noir (Slate)
   'slate': '#4A4A4A',
   // Couleurs secondaires
   'white': '#FFFFFF',
   'gray-light': '#6B7280',
   'border-light': '#E5E7EB',
-  'filter-active-bg': '#dfddd7', // L'ancienne couleur 'stone' pour les filtres actifs
+  'filter-active-bg': '#dfddd7',
 
-  // Couleurs d'accentuation pour les cartes (utilisées dans FeatureCard)
   'terracotta': '#D87855',
   'sky': '#8BB4C9',
   'sunset': '#E8A87C',
@@ -45,7 +42,6 @@ type FeatureCategory = {
   cards: CardData[];
 };
 
-// Data (inchangés, mais inclus pour la complétude du fichier)
 const featuredData: FeatureCategory[] = [
   {
     id: 'sustainability',
@@ -272,7 +268,6 @@ const FeatureCard: React.FC<{ card: CardData }> = ({ card }) => {
         <div
           className="absolute inset-0"
           style={{
-            // L'overlay reste sombre pour la lisibilité sur l'image
             background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%)',
           }}
         />
@@ -280,7 +275,6 @@ const FeatureCard: React.FC<{ card: CardData }> = ({ card }) => {
         {card.hasArrow && (
           <div
             className="absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center"
-            // Remplacé #000000 par slate
             style={{ backgroundColor: COLORS_MAP.white, color: COLORS_MAP.slate }}
           >
             <ArrowIcon />
@@ -311,7 +305,6 @@ const FeatureCard: React.FC<{ card: CardData }> = ({ card }) => {
       {card.hasArrow && (
         <div
           className="absolute top-6 right-6 w-10 h-10 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
-          // Remplacé #000000 par slate
           style={{ backgroundColor: COLORS_MAP.slate, color: accentColors[card.accentColor] }}
         >
           <ArrowIcon />
@@ -321,13 +314,11 @@ const FeatureCard: React.FC<{ card: CardData }> = ({ card }) => {
       <div>
         <p
           className="text-3xl md:text-4xl font-bold mb-3 leading-none"
-          // Remplacé #000000 par slate
           style={{ color: COLORS_MAP.slate }}
         >
           {card.stat}
         </p>
         <p className="text-sm md:text-base leading-relaxed font-normal"
-          // Remplacé #000000 par slate (avec opacité)
            style={{ color: COLORS_MAP.slate, opacity: 0.85 }}>
           {card.description}
         </p>
@@ -336,7 +327,6 @@ const FeatureCard: React.FC<{ card: CardData }> = ({ card }) => {
   );
 };
 
-// Main Component
 const FeaturedSection: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<FeatureCategory>(featuredData[0]);
   const cardsRef = useRef<HTMLDivElement>(null);
@@ -344,7 +334,6 @@ const FeaturedSection: React.FC = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [hasAnimated, setHasAnimated] = useState(false);
 
-  // Initial entrance animation with ScrollTrigger (inchangé)
   useEffect(() => {
     if (!hasAnimated && sectionRef.current) {
       const ctx = gsap.context(() => {
@@ -381,7 +370,6 @@ const FeaturedSection: React.FC = () => {
     }
   }, [hasAnimated]);
 
-  // Category change animation (inchangé)
   useEffect(() => {
     if (hasAnimated) {
       const ctx = gsap.context(() => {
@@ -405,6 +393,70 @@ const FeaturedSection: React.FC = () => {
     }
   }, [activeCategory, hasAnimated]);
 
+  useEffect(() => {
+    if (!sectionRef.current) return;
+
+    const ctx = gsap.context(() => {
+      // Cards animation
+      ScrollTrigger.batch(".feature-card", {
+        start: "top 90%",
+        interval: 0.12,
+        onEnter: (batch) => {
+          gsap.fromTo(
+            batch,
+            {
+              opacity: 0,
+              y: 50,
+              scale: 0.94,
+              filter: "blur(6px)"
+            },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              filter: "blur(0px)",
+              duration: 1.35,
+              ease: "power4.out",
+              stagger: {
+                each: 0.1,
+                from: "start"
+              }
+            }
+          );
+        }
+      });
+
+      ScrollTrigger.batch(".feature-content", {
+        start: "top 92%",
+        onEnter: (batch) => {
+          gsap.fromTo(
+            batch,
+            {
+              opacity: 0,
+              x: -35,
+              filter: "blur(4px)"
+            },
+            {
+              opacity: 1,
+              x: 0,
+              filter: "blur(0px)",
+              duration: 1.2,
+              ease: "power4.out",
+              stagger: {
+                each: 0.12,
+                from: "start"
+              }
+            }
+          );
+        }
+      });
+
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, []);
+
+
   return (
     <section
       ref={sectionRef}
@@ -421,7 +473,6 @@ const FeaturedSection: React.FC = () => {
               className="filter-btn px-6 py-2.5 text-sm font-medium rounded-full transition-all duration-300"
               style={{
                 backgroundColor: category.id === activeCategory.id ? COLORS_MAP['filter-active-bg'] : COLORS_MAP.white,
-                // Remplacé #000000 par slate
                 color: COLORS_MAP.slate,
               }}
             >
@@ -432,7 +483,7 @@ const FeaturedSection: React.FC = () => {
 
         <div className="grid lg:grid-cols-[1fr_1.5fr] gap-12 lg:gap-20 items-start">
           {/* Content Section */}
-          <div ref={contentRef} className="space-y-6">
+          <div ref={contentRef} className="space-y-6 feature-content">
             <div className="flex items-start gap-3">
               <p className="text-sm font-medium" style={{ color: COLORS_MAP['gray-light'] }}>
                 Who We Are at Hikee
@@ -440,15 +491,14 @@ const FeaturedSection: React.FC = () => {
             </div>
 
             <h2
-              className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight"
-              // Remplacé #000000 par slate
+              className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-tight feature-content"
               style={{ color: COLORS_MAP.slate }}
             >
               {activeCategory.title}
             </h2>
 
             <p
-              className="text-base md:text-lg leading-relaxed"
+              className="text-base md:text-lg leading-relaxed feature-content"
               style={{ color: COLORS_MAP['gray-light'] }}
             >
               {activeCategory.subtitle}
@@ -456,9 +506,8 @@ const FeaturedSection: React.FC = () => {
 
             <div className="pt-4">
               <button
-                className="px-6 py-3 rounded-full font-medium text-sm transition-all duration-300 hover:scale-105"
+                className="px-6 py-3 rounded-full font-medium text-sm transition-all duration-300 hover:scale-105 feature-content"
                 style={{
-                  // Remplacé #000000 par slate
                   backgroundColor: COLORS_MAP.slate,
                   color: COLORS_MAP.white,
                 }}
@@ -468,7 +517,6 @@ const FeaturedSection: React.FC = () => {
             </div>
           </div>
 
-          {/* Cards Grid - 3 columns */}
           <div ref={cardsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeCategory.cards.map((card, index) => (
               <div key={index} className="feature-card">

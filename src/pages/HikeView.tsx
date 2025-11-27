@@ -1,14 +1,21 @@
-import React, { useEffect, useState, FormEvent } from 'react'
+'use client';
+
+import React, { useEffect, useState, FormEvent, useLayoutEffect, useRef } from 'react'
 import { MapPin, Route, Mountain, Calendar } from 'lucide-react'
 import { useParams } from 'react-router-dom'
 import { db, storage } from '../lib/firebase'
 import { ref, getDownloadURL } from 'firebase/storage'
 import FavoriteButton from '../components/ButtonFav'
-import HikeMap from '../components/HikeMap'
+import HikeMap from '../components/hikes/HikeMap'
 import CommentsSection, { Comment } from '../components/CommentsSection'
 import { doc, onSnapshot, collection, addDoc, query, orderBy, DocumentData, DocumentSnapshot, QuerySnapshot, Timestamp, serverTimestamp } from 'firebase/firestore'
 import { useAuth } from '../firebase/auth'
 import WeatherBanner from '../components/hikes/WeatherBanner'
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import SplitText from '../components/animations/SplitText'
+
+gsap.registerPlugin(ScrollTrigger)
 
 interface Hike {
   id: string
@@ -35,7 +42,11 @@ export default function HikeView() {
   const [gpxPolyline, setGpxPolyline] = useState<[number, number][]>([])
   const { user } = useAuth()
 
-  // --- Charger la randonnée et les commentaires ---
+  const containerRef = useRef<HTMLDivElement>(null)
+  const mainImageRef = useRef<HTMLImageElement>(null)
+  const galleryRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  // === CHARGEMENT DES DONNÉES (inchangé) ===
   useEffect(() => {
     if (!id) return
 
@@ -67,23 +78,20 @@ export default function HikeView() {
     }
   }, [id])
 
-  // --- Charger GPX si disponible ---
   useEffect(() => {
     const loadGpx = async () => {
-      if (!hike) return
+      if (!hike?.gpxPath) return
       try {
-        if (hike.gpxPath) {
-          const url = await getDownloadURL(ref(storage, hike.gpxPath))
-          const res = await fetch(url)
-          const text = await res.text()
-          const parser = new DOMParser()
-          const xml = parser.parseFromString(text, 'application/xml')
-          const coords: [number, number][] = Array.from(xml.getElementsByTagName('trkpt')).map(pt => [
-            parseFloat(pt.getAttribute('lat') || '0'),
-            parseFloat(pt.getAttribute('lon') || '0')
-          ])
-          if (coords.length) setGpxPolyline(coords)
-        }
+        const url = await getDownloadURL(ref(storage, hike.gpxPath))
+        const res = await fetch(url)
+        const text = await res.text()
+        const parser = new DOMParser()
+        const xml = parser.parseFromString(text, 'application/xml')
+        const coords: [number, number][] = Array.from(xml.getElementsByTagName('trkpt')).map(pt => [
+          parseFloat(pt.getAttribute('lat') || '0'),
+          parseFloat(pt.getAttribute('lon') || '0')
+        ])
+        if (coords.length) setGpxPolyline(coords)
       } catch (err) {
         console.error('Impossible de charger le GPX', err)
       }
@@ -91,7 +99,6 @@ export default function HikeView() {
     loadGpx()
   }, [hike])
 
-  // --- Ajouter un commentaire ---
   const addComment = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (!user || !id) return
@@ -110,6 +117,55 @@ export default function HikeView() {
     }
   }
 
+  // ================================================
+  // ANIMATION D'ENTRÉE PREMIUM — UNE SEULE FOIS
+  // ================================================
+  useLayoutEffect(() => {
+    if (loading || error || !hike) return
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top 70%",
+          once: true,
+        }
+      })
+
+      // 1. Image principale — reveal cinématique
+      if (mainImageRef.current) {
+        tl.fromTo(mainImageRef.current,
+          { scale: 1.15, opacity: 0, filter: "brightness(0.7) blur(8px)" },
+          { scale: 1, opacity: 1, filter: "brightness(1) blur(0px)", duration: 2.2, ease: "expo.out" }
+        )
+      }
+
+      // 2. Galerie secondaire
+      galleryRefs.current.forEach((el, i) => {
+        if (el) {
+          tl.fromTo(el,
+            { opacity: 0, y: 80, scale: 0.9 },
+            { opacity: 1, y: 0, scale: 1, duration: 1.4, ease: "expo.out", delay: i * 0.08 },
+            "-=1.8"
+          )
+        }
+      })
+
+      // 3. Titre avec ton SplitText adoré
+      tl.addLabel("title", "-=1.6")
+
+      // 4. Infos, carte, itinéraire, commentaires
+      tl.fromTo(".info-block, .map-block, .comments-block",
+        { opacity: 0, y: 100 },
+        { opacity: 1, y: 0, duration: 1.6, stagger: 0.2, ease: "expo.out" },
+        "title+=0.4"
+      )
+
+    }, containerRef)
+
+    return () => ctx.revert()
+  }, [loading, error, hike])
+
   if (loading) return <p className="p-6 text-center">Chargement…</p>
   if (error) return <p className="p-6 text-center text-red-500">{error}</p>
   if (!hike) return <p className="p-6 text-center">Randonnée introuvable</p>
@@ -120,147 +176,118 @@ export default function HikeView() {
     hard: 'bg-[var(--red)]',
   }
 
-  const defaultImage =
-    'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=60'
-  const mainImage = hike.imageUrls && hike.imageUrls.length > 0
-    ? hike.imageUrls[0]
-    : defaultImage
-
-  const formatDate = (ts: Timestamp) =>
-    ts.toDate().toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })
-
+  const mainImage = hike.imageUrls?.[0] || 'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1200&q=60'
+  const formatDate = (ts: Timestamp) => ts.toDate().toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })
   const userName = user?.displayName?.trim() || user?.email?.split('@')[0] || 'Anonyme'
 
   return (
-    <div className="container mx-auto max-w-10xl p-6 mt-25 space-y-6">
-      {/* Header Image + Favorite */}
-      <div className="relative overflow-hidden rounded-xl shadow">
-        <div className="absolute top-3 right-3">
+    <div ref={containerRef} className="w-full px-4 md:px-8 mt-25 space-y-12">
+
+      {/* Header Image */}
+      <div className="relative overflow-hidden rounded-2xl shadow-2xl">
+        <img
+          ref={mainImageRef}
+          src={mainImage}
+          alt={hike.title}
+          className="w-full h-80 md:h-[500px] object-cover"
+          style={{ opacity: 0 }}
+        />
+        <div className="absolute top-4 right-4 z-10">
           {id && <FavoriteButton user={user} hikeId={id} />}
         </div>
-        {hike.imageUrls && hike.imageUrls.length > 0 && (
-          <>
-            {/* Image principale */}
-            <div className="relative overflow-hidden rounded-xl shadow">
-              <img
-                src={hike.imageUrls[0]}
-                alt="Vue principale"
-                className="w-full h-80 md:h-[450px] object-cover"
-              />
-              <div className="absolute top-3 right-3">
-                {id && <FavoriteButton user={user} hikeId={id} />}
-              </div>
-            </div>
-
-            {/* Galerie sous l’image principale */}
-            {hike.imageUrls.length > 1 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mt-4">
-                {hike.imageUrls.slice(1).map((url, i) => (
-                  <div
-                    key={i}
-                    className="relative overflow-hidden rounded-lg group"
-                  >
-                    <img
-                      src={url}
-                      alt={`photo-${i + 1}`}
-                      className="w-full h-40 object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
-        )}
       </div>
 
-      {/* Hike Info */}
-      <div className="bg-white shadow rounded-xl p-6 space-y-4">
-        <h1 className="text-3xl font-bold text-gray-900">{hike.title}</h1>
-
-        <div className="flex flex-wrap items-center gap-3 text-sm text-gray-700">
-          <div className="flex items-center gap-1.5">
-            <MapPin className="w-4 h-4 text-[var(--corail)]" />
-            <span>{hike.region}</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Route className="w-4 h-4 text-[var(--orange)]" />
-            <span>{hike.distanceKm} km</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <Mountain className="w-4 h-4 text-[var(--green-moss)]" />
-            <span>+{hike.elevationGainM} m</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span
-              className={`px-3 py-1 text-xs font-semibold text-white rounded-full ${difficultyColors[hike.difficulty]}`}
+      {/* Galerie secondaire */}
+      {hike.imageUrls && hike.imageUrls.length > 1 && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {hike.imageUrls.slice(1).map((url, i) => (
+            <div
+              key={i}
+              ref={el => galleryRefs.current[i] = el}
+              className="relative overflow-hidden rounded-xl shadow-lg group cursor-pointer"
             >
-              {hike.difficulty === 'easy'
-                ? 'Facile'
-                : hike.difficulty === 'moderate'
-                  ? 'Modérée'
-                  : 'Difficile'}
-            </span>
-          </div>
+              <img
+                src={url}
+                alt={`photo-${i + 1}`}
+                className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Titre + Infos */}
+      <div className="info-block bg-white shadow-xl rounded-2xl p-8 space-y-6">
+        <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight">
+          <SplitText
+            text={hike.title}
+            tag="span"
+            splitType="words"
+            from={{ opacity: 0, y: 60 }}
+            to={{ opacity: 1, y: 0 }}
+            duration={1.3}
+            delay={200}
+            ease="expo.out"
+            textAlign="left"
+          />
+        </h1>
+
+        <div className="flex flex-wrap items-center gap-4 text-lg">
+          <div className="flex items-center gap-2"><MapPin className="w-5 h-5 text-[#2C3E2E]" /> {hike.region}</div>
+          <div className="flex items-center gap-2"><Route className="w-5 h-5 text-[#C46D52]" /> {hike.distanceKm} km</div>
+          <div className="flex items-center gap-2"><Mountain className="w-5 h-5 text-[#7A9B76]" /> +{hike.elevationGainM} m</div>
+          <span className={`px-3 py-2 rounded-full text-white font-bold text-sm ${difficultyColors[hike.difficulty]}`}>
+            {hike.difficulty === 'easy' ? 'Facile' : hike.difficulty === 'moderate' ? 'Modérée' : 'Difficile'}
+          </span>
         </div>
 
-        <p className="text-gray-700 leading-relaxed">{hike.description}</p>
+        <p className="text-lg text-gray-700 leading-relaxed ">{hike.description}</p>
 
-        <div className="text-xs text-gray-500 space-y-1 mt-3">
-          {hike.createdAt && (
-            <p className="flex items-center gap-1.5">
-              <Calendar className="w-3 h-3 text-gray-400" />
-              Créée le {formatDate(hike.createdAt)}
-            </p>
-          )}
-          {hike.updatedAt && (
-            <p className="flex items-center gap-1.5">
-              <Calendar className="w-3 h-3 text-gray-400" />
-              Dernière mise à jour le {formatDate(hike.updatedAt)}
-            </p>
-          )}
+        <div className="text-sm text-gray-500 space-y-1">
+          {hike.createdAt && <p><Calendar className="w-4 h-4 inline mr-2" />Créée le {formatDate(hike.createdAt)}</p>}
+          {hike.updatedAt && <p><Calendar className="w-4 h-4 inline mr-2" />Mis à jour le {formatDate(hike.updatedAt)}</p>}
         </div>
       </div>
 
-      {/* Carte + Itinéraire */}
-      <div className="bg-white shadow rounded-xl p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-          {/* Carte */}
-          <div className="w-full h-80 md:h-[500px] overflow-hidden rounded-lg md:z-30">
-            <HikeMap
-              hikeId={id!}
-              editable={!!user}
-              gpxPath={hike.gpxPath || null} // <- toujours prioritaire
-            />
+      <div className="map-block grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 bg-white shadow-xl rounded-2xl overflow-hidden">
+          <div className="h-96 lg:h-full min-h-96">
+            <HikeMap hikeId={id!} editable={!!user} gpxPath={hike.gpxPath || null} />
           </div>
+        </div>
 
-          {/* Itinéraire */}
+        <div className="space-y-8">
           {hike.itinerary && hike.itinerary.length > 0 && (
-            <div>
-              <h2 className="text-2xl font-semibold mb-4">Itinéraire</h2>
-              <ul className="list-none space-y-4 text-gray-700">
+            <div className="bg-white shadow-xl rounded-2xl p-6">
+              <h2 className="text-2xl font-bold mb-4">Itinerary</h2>
+              <ol className="space-y-4 text-gray-700">
                 {hike.itinerary.map((step, i) => (
-                  <li key={i} className="leading-relaxed">
-                    <p className="font-semibold">{step.title}</p>
-                    <p className="text-gray-600">{step.description}</p>
+                  <li key={i}>
+                    <p className="font-semibold text-lg">{i + 1}. {step.title}</p>
+                    <p className="text-gray-600 mt-1">{step.description}</p>
                   </li>
                 ))}
-              </ul>
+              </ol>
             </div>
           )}
-          <div>
-            <WeatherBanner city="Chamonix" />
-          </div>
+          <WeatherBanner
+            city={hike.region}
+            lat={hike.polyline?.[0]?.[0]}
+            lon={hike.polyline?.[0]?.[1]}
+          />
         </div>
       </div>
 
-      {/* Comments Section */}
-      <CommentsSection
-        comments={comments}
-        canComment={!!user}
-        hikeId={id!}
-        userUid={user?.uid || ''}
-        userName={userName}
-      />
+      {/* Commentaires */}
+      <div className="comments-block">
+        <CommentsSection
+          comments={comments}
+          canComment={!!user}
+          hikeId={id!}
+          userUid={user?.uid || ''}
+          userName={userName}
+        />
+      </div>
     </div>
   )
 }

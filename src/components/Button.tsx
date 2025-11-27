@@ -1,64 +1,55 @@
 import React from "react";
+import { ArrowUpRight } from "lucide-react";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
-  variant?: "green" | "orange" | "lavender";
+  variant?: "forest" | "sage" | "terracotta" | "sky" | "sunset" | "moss";
   arrow?: boolean;
-  arrowPosition?: "right" | "left";
+  size?: "sm" | "md" | "lg";
 }
 
 export default function Button({
                                  children,
-                                 variant = "green",
+                                 variant = "forest",
                                  arrow = false,
-                                 arrowPosition = "right",
+                                 size = "md",
                                  type = "button",
+                                 className = "",
                                  ...props
                                }: ButtonProps) {
   const baseClasses =
-    "group flex items-center justify-center gap-1.5 text-white text-xs sm:text-sm font-medium py-2 px-5 rounded-full transition-all duration-300 cursor-pointer backdrop-blur-md border border-white/20 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] active:scale-95";
+    "group inline-flex items-center justify-center gap-2 font-medium rounded-full transition-all duration-300 cursor-pointer active:scale-95 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none";
 
-  const colorClasses =
-    variant === "green"
-      ? "bg-[rgba(137,126,69,0.3)] hover:bg-[rgba(137,126,69,0.45)]"
-      : variant === "orange"
-        ? "bg-[rgba(239,149,95,0.3)] hover:bg-[rgba(239,149,95,0.45)]"
-        : "bg-[rgba(173,163,177,0.3)] hover:bg-[rgba(173,163,177,0.45)]";
+  const sizeClasses = {
+    sm: "text-xs px-4 py-2",
+    md: "text-sm px-6 py-3",
+    lg: "text-base px-8 py-4"
+  };
 
-  const ArrowIcon = () => (
-    <svg
-      className={`w-4 h-4 transition-transform duration-300 ${
-        arrowPosition === "right"
-          ? "group-hover:translate-x-1"
-          : "group-hover:-translate-x-1 rotate-180"
-      }`}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M17 8l4 4m0 0l-4 4m4-4H3"
-      />
-    </svg>
-  );
+  const variantClasses = {
+    forest: "bg-[#2C3E2E] hover:bg-[#3d5440] text-white shadow-[0_4px_14px_rgba(44,62,46,0.3)]",
+    sage: "bg-[#7A9B76] hover:bg-[#8aab86] text-white shadow-[0_4px_14px_rgba(122,155,118,0.3)]",
+    terracotta: "bg-[#D87855] hover:bg-[#e08b6a] text-white shadow-[0_4px_14px_rgba(216,120,85,0.3)]",
+    sky: "bg-[#8BB4C9] hover:bg-[#9dc2d4] text-white shadow-[0_4px_14px_rgba(139,180,201,0.3)]",
+    sunset: "bg-[#E8A87C] hover:bg-[#edb68f] text-white shadow-[0_4px_14px_rgba(232,168,124,0.3)]",
+    moss: "bg-[#A8B99C] hover:bg-[#b5c5aa] text-[#2C3E2E] shadow-[0_4px_14px_rgba(168,185,156,0.3)]"
+  };
 
   return (
     <button
       type={type}
+      className={`${baseClasses} ${sizeClasses[size]} ${variantClasses[variant]} ${className}`}
       {...props}
-      className={`${baseClasses} ${colorClasses}`}
-      style={{
-        color: "var(--white, #fafafa)",
-        textTransform: "uppercase",
-        letterSpacing: "0.1em",
-      }}
     >
-      {arrow && arrowPosition === "left" && <ArrowIcon />}
-      {children}
-      {arrow && arrowPosition === "right" && <ArrowIcon />}
+      <span className="relative">
+        {children}
+      </span>
+      {arrow && (
+        <ArrowUpRight
+          className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+          strokeWidth={2.5}
+        />
+      )}
     </button>
   );
 }

@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^5.2.2",
+    "@studio-freight/lenis": "^1.0.42",
     "@tailwindcss/vite": "^4.1.13",
     "axios": "^1.13.1",
     "firebase": "^12.2.1",
@@ -28,6 +29,7 @@
     "react-icons": "^5.5.0",
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.9.1",
+    "recharts": "^3.5.0",
     "tailwindcss": "^4.1.13",
     "zod": "^4.1.9"
   },

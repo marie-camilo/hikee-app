@@ -31,7 +31,6 @@ export const addUserToFirestore = async (user: User, name?: string) => {
         },
         { merge: true }
       );
-      console.log("Utilisateur existant mis à jour :", existingDisplayName);
     } else {
       await setDoc(userDocRef, {
         displayName,
