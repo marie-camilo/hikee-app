@@ -2,6 +2,7 @@
 
 Hikee est une plateforme de **randonnées** qui permet de découvrir, répertorier et gérer des randonnées en France et en Europe. Le site est conçu pour offrir une expérience fluide et immersive grâce à des animations modernes.  
 Projet FullStack codé avec **React, TypeScript et Firebase**.
+Le site est disponible juste ici : https://hikee.marie-camilo.fr/
 
 ---
 
@@ -56,7 +57,6 @@ Le suivi des tâches et l’organisation du projet sont disponibles sur Trello :
 
 - Interface fluide et moderne, responsive sur tous les devices
 - Animations interactives et smooth scrolling avec **GSAP** et **Lenis**
-- Filtres brutalistes pour trier les randonnées par **difficulté** et **région**
 - Effet **parallax** sur les sections hero pour une immersion visuelle
 
 ---
@@ -74,6 +74,7 @@ Le suivi des tâches et l’organisation du projet sont disponibles sur Trello :
 ### Animations
 - [GSAP](https://gsap.com/)
 - [Lenis](https://lenis.darkroom.engineering/)
+- [FramerMotion]([https://lenis.darkroom.engineering/](https://motion.dev/))
 
 ---
 
