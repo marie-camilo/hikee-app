@@ -7,7 +7,6 @@ Le site est disponible juste ici : https://hikee.marie-camilo.fr/
 ---
 
 ## 📖 Table des matières
-- [📋 Suivi du projet](#-suivi-du-projet)
 - [Fonctionnalités](#fonctionnalités)
 - [Stack technique](#-stack-technique)
 - [Architecture du projet](#-architecture-du-projet)
@@ -15,35 +14,27 @@ Le site est disponible juste ici : https://hikee.marie-camilo.fr/
 
 ---
 
-## 📋 Suivi du projet
-
-Le suivi des tâches et l’organisation du projet sont disponibles sur Trello :  
-[Trello Board](https://trello.com/b/zuXba9GL/cartorando)
-
-![Trello Rando & Bivouac](trello-board.png)
-
----
-
 ## Fonctionnalités
 
-- Carte interactive (Leaflet/Mapbox)
-- Fiches randonnées : distance, dénivelé, difficulté, photos
-- Recherche & filtres (niveau, durée, localisation)
-- Authentification (création de compte, connexion)
-- Gestion des favoris ⭐
-- Ajout de randonnées/bivouacs par les utilisateurs connectés
-- Back-office admin (validation et modération)
+- Cartes interactives avec tracés GPX (Leaflet/Mapbox)
 - Import de fichiers GPX
+- Fiches randonnées : distance, dénivelé, difficulté, photos
+- Recherche & filtres (niveau et localisation)
+- Authentification (création de compte, connexion)
+- Back office utilisateurs avec suivi des randonnées et statistiques globales
+- Gestion des favoris ⭐
+- CRUD complet (randonnées, commentaires)
+- Back-office admin (validation et modération des contenus)
 
 ### Pour les utilisateurs
 
 - Créer un **compte personnel** et se connecter
-- Accéder à un **dashboard personnel** pour gérer ses randonnées :
+- Accéder à un **back office personnel** pour gérer ses randonnées :
     - CRUD complet (Créer, Lire, Mettre à jour, Supprimer ses randonnées)
     - Modifier les informations de son profil
     - Changer sa **photo de profil**
 - Mettre des **randonnées en favoris** pour un accès rapide
-- Upload de **plusieurs photos** pour chaque randonnée
+- Upload de **plusieurs photos** pour chaque randonnée (5 maximum par randonnées)
 - Upload de **tracés GPX** pour suivre les parcours
 - Ajouter des **commentaires** et répondre aux commentaires
 
@@ -55,16 +46,15 @@ Le suivi des tâches et l’organisation du projet sont disponibles sur Trello :
 
 ### Expérience utilisateur
 
-- Interface fluide et moderne, responsive sur tous les devices
-- Animations interactives et smooth scrolling avec **GSAP** et **Lenis**
-- Effet **parallax** sur les sections hero pour une immersion visuelle
+- Interface fluide et responsive sur tous les devices
+- Animations interactives et smooth scrolling avec **GSAP** et **FramerMotion**
 
 ---
 
 ## 🚀 Stack technique
 
 ### Frontend
-- [React](https://fr.react.dev/) + [Next.js](https://nextjs.org/)
+- [React](https://fr.react.dev/) + [Vite.js](https://nextjs.org/](https://vite.dev/)
 - [TypeScript](https://www.typescriptlang.org/)
 - [TailwindCSS](https://tailwindcss.com/)
 
@@ -73,7 +63,6 @@ Le suivi des tâches et l’organisation du projet sont disponibles sur Trello :
 
 ### Animations
 - [GSAP](https://gsap.com/)
-- [Lenis](https://lenis.darkroom.engineering/)
 - [FramerMotion]([https://lenis.darkroom.engineering/](https://motion.dev/))
 
 ---
