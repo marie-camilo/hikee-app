@@ -70,15 +70,36 @@ Le site est disponible juste ici : https://hikee.marie-camilo.fr/
 ## Architecture du projet
 
 ```text
-├─ src/
-│  ├─ components/  # Composants réutilisables (cards, animations, etc.)
-│  ├─ pages/       # Pages principales (HikeList, Dashboard, Admin, etc.)
-│  ├─ lib/         # Configuration Firebase et helpers
-│  ├─ hooks/       # Hooks personnalisés
-│  └─ assets/      # Images, icônes, etc.
-├─ public/
-├─ package.json
-└─ README.md
+hikee-app/
+├── public/
+│   ├── images/          # Images statiques (illustrations, screenshots…)
+│   ├── logo/            # Logos et variantes
+│   └── video/           # Vidéos hero / fond
+│
+└── src/
+    ├── assets/
+    │   └── fonts/       # Polices personnalisées
+    │
+    ├── components/      # Tous les composants réutilisables
+    │   ├── animations/  # Wrappers GSAP, ScrollTrigger, parallax…
+    │   ├── cursor/      # Curseur personnalisé animé
+    │   ├── dashboard/   # Composants spécifiques au tableau de bord
+    │   └── hikes/       # Cards, fiches randonnée, galerie photos…
+    │
+    ├── firebase/        # Config Firebase + services (auth, firestore, storage)
+    │
+    ├── hooks/           # Hooks personnalisés (useAuth, useHikes, useGSAP…)
+    │
+    ├── lib/             # Fonctions utilitaires globales
+    │
+    ├── pages/           # Pages Next.js (App Router ou Pages Router)
+    │   └── admin/       # Pages du back-office admin
+    │
+    ├── routes/          # Gestion des routes protégées / middleware (si App Router)
+    │
+    ├── types/           # Interfaces & types TypeScript globaux
+    │
+    └── utils/           # Helpers divers (formatage dates, GPX parser, etc.)
 ```
 
 ---
