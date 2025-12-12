@@ -58,34 +58,35 @@ export default function MyHikes() {
 
   const handleDelete = async (id: string) => {
     toast((t) => (
-      <div className="flex flex-col gap-2">
-        <span>Delete this hike?</span>
-        <div className="flex justify-end gap-2 mt-1">
+      <div className="flex flex-col gap-3 p-4 bg-gray-900/95 backdrop-blur-md rounded-xl border border-gray-700 shadow-lg text-white">
+        <span className="font-medium">Êtes-vous sûr de vouloir supprimer cette randonnée ?</span>
+        <div className="flex justify-end gap-2">
           <button
-            className="bg-gray-200 px-3 py-1 rounded cursor-pointer"
+            className="px-3 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 transition"
             onClick={() => toast.dismiss(t.id)}
           >
-            Cancel
+            Annuler
           </button>
           <button
-            className="bg-red-500 text-white px-3 py-1 rounded cursor-pointer"
+            className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 transition"
             onClick={async () => {
               toast.dismiss(t.id)
               try {
                 await deleteDoc(doc(db, 'hikes', id))
-                toast.success('Hike deleted!')
+                toast.success('Randonnée supprimée !')
               } catch (e) {
                 console.error(e)
-                toast.error('Error while deleting')
+                toast.error('Erreur lors de la suppression')
               }
             }}
           >
-            Delete
+            Supprimer
           </button>
         </div>
       </div>
     ), { position: 'top-center' })
   }
+
 
   if (!user) {
     return <p className="text-gray-600 p-6">You need to be logged in to see your hikes.</p>

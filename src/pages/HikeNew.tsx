@@ -16,21 +16,21 @@ import 'leaflet/dist/leaflet.css'
 
 // === Schema Zod ===
 const schema = z.object({
-    title: z.string().min(3, "Le titre doit contenir au moins 3 caractères"),
-    description: z.string().min(10, "La description doit contenir au moins 10 caractères"),
-    region: z.string().min(2, "La région doit contenir au moins 2 caractères"),
-    difficulty: z.enum(['easy', 'moderate', 'hard']),
-    distanceKm: z.number().positive("La distance doit être positive"),
-    elevationGainM: z.number().nonnegative("Le dénivelé ne peut pas être négatif"),
-    images: z.any().optional(),
-    gpx: z.any().optional(),
-    itinerary: z.array(
-      z.object({
-          title: z.string().min(1, "Le titre de l'étape est obligatoire"),
-          description: z.string().min(1, "La description de l'étape est obligatoire")
-      })
-    )
-})
+  title: z.string().min(3, "Le titre doit contenir au moins 3 caractères"),
+  description: z.string().min(10, "La description doit contenir au moins 10 caractères"),
+  region: z.string().nonempty("La région est obligatoire"),
+  difficulty: z.enum(['easy', 'moderate', 'hard']),
+  distanceKm: z.number().positive("La distance doit être positive"),
+  elevationGainM: z.number().nonnegative("Le dénivelé ne peut pas être négatif"),
+  images: z.array(z.any()).min(1, "Ajoutez au moins une image"),
+  gpx: z.any().optional(),
+  itinerary: z.array(
+    z.object({
+      title: z.string().min(1, "Le titre de l'étape est obligatoire"),
+      description: z.string().min(1, "La description de l'étape est obligatoire")
+    })
+  ).min(1, "Ajoutez au moins une étape")
+});
 
 type HikeFormData = z.infer<typeof schema>;
 
@@ -48,10 +48,15 @@ export default function HikeNew() {
     const gpxInputRef = useRef<HTMLInputElement>(null)
     const imageInputRef = useRef<HTMLInputElement>(null)
 
-    const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<HikeFormData>({
-        resolver: zodResolver(schema),
-        defaultValues: { itinerary: [''], distanceKm: 0, elevationGainM: 0 }
-    });
+  const { register, handleSubmit, control, setValue, watch, formState: { errors } } = useForm<HikeFormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      itinerary: [{ title: '', description: '' }],
+      distanceKm: 0.1,
+      elevationGainM: 0
+    }
+  });
+
 
     const { fields, append, remove } = useFieldArray({ control, name: 'itinerary' });
 
@@ -281,75 +286,94 @@ export default function HikeNew() {
           </div>
 
           {/* Distance & Dénivelé */}
-          <div className="grid md:grid-cols-2 gap-4">
-              <div className="flex flex-col">
-                  <label className="mb-2 font-semibold text-gray-700">Distance (km)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    {...register('distanceKm', { valueAsNumber: true })}
-                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
-                  />
-                  {errors.distanceKm && <p className="text-red-600 text-sm mt-1">{errors.distanceKm.message}</p>}
-              </div>
-              <div className="flex flex-col">
-                  <label className="mb-2 font-semibold text-gray-700">Dénivelé (m)</label>
-                  <input
-                    type="number"
-                    step="1"
-                    {...register('elevationGainM', { valueAsNumber: true })}
-                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
-                  />
-                  {errors.elevationGainM && <p className="text-red-600 text-sm mt-1">{errors.elevationGainM.message}</p>}
-              </div>
+          <div className="flex flex-col">
+            <label className="mb-2 font-semibold text-gray-700">Dénivelé (m)</label>
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min={0}
+                max={5000}
+                step={10}
+                {...register('elevationGainM', { valueAsNumber: true })}
+                className="w-full accent-[#2C3E2E]"
+              />
+              <span>{watch('elevationGainM')} m</span>
+            </div>
+            {errors.elevationGainM && <p className="text-red-600 text-sm mt-1">{errors.elevationGainM.message}</p>}
           </div>
+
+          {/* Distance */}
+          <div className="flex flex-col mb-4">
+            <label className="mb-2 font-semibold text-gray-700">Distance (km)</label>
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min={0.1}
+                max={500}
+                step={0.1}
+                {...register('distanceKm', { valueAsNumber: true })}
+                className="w-full accent-[#2C3E2E]"
+              />
+              <span>{watch('distanceKm')?.toFixed(1)} km</span>
+            </div>
+            {errors.distanceKm && <p className="text-red-600 text-sm mt-1">{errors.distanceKm.message}</p>}
+          </div>
+
 
           {/* Itinéraire */}
           <div className="flex flex-col space-y-4">
-              <label className="font-semibold text-gray-700 flex items-center gap-2 mb-1">
-                  Itinéraire & étapes
-              </label>
-              <p className="text-gray-500 text-sm mb-3">
-                  Décrivez chaque étape de votre randonnée. Vous pouvez ajouter un titre et une description détaillée pour chaque étape.
-              </p>
-              {fields.map((field, index) => (
-                <div key={field.id} className="flex flex-col md:flex-row gap-2 mb-2 p-4 border rounded-lg shadow-sm bg-gray-50 items-center">
+            <label className="font-semibold text-gray-700 flex items-center gap-2 mb-1">
+              Itinéraire & étapes <span className="text-red-500">*</span>
+            </label>
+            <p className="text-gray-500 text-sm mb-3">
+              Décrivez chaque étape de votre randonnée pour guider les randonneurs.
+              Indiquez un titre et une description détaillée (points de repère, difficulté, conseils) pour que chaque étape soit claire et complète.
+            </p>
 
-                    {/* Titre de l'étape en textarea autoresize */}
-                    <textarea
-                      {...register(`itinerary.${index}.title` as const)}
-                      placeholder="Titre de l'étape"
-                      className="flex-1 px-3 py-2 border rounded-lg resize-none overflow-hidden focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
-                      onInput={autoResize}
-                    />
+            {fields.map((field, index) => (
+              <div key={field.id} className="flex flex-col md:flex-row gap-2 mb-2 p-4 border rounded-lg shadow-sm bg-gray-50 items-center">
 
-                    {/* Description de l'étape */}
-                    <textarea
-                      {...register(`itinerary.${index}.description` as const)}
-                      placeholder="Description de l'étape"
-                      className="flex-1 px-3 py-2 border rounded-lg resize-none overflow-hidden focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
-                      onInput={autoResize}
-                    />
+                {/* Titre de l'étape */}
+                <textarea
+                  {...register(`itinerary.${index}.title` as const, { required: "Le titre de l'étape est obligatoire" })}
+                  placeholder="Titre de l'étape (obligatoire)"
+                  className="flex-1 px-3 py-2 border rounded-lg resize-none overflow-hidden focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
+                  onInput={autoResize}
+                />
+                {errors.itinerary?.[index]?.title && (
+                  <p className="text-red-600 text-sm mt-1">{errors.itinerary[index]?.title?.message}</p>
+                )}
 
-                    {/* Bouton supprimer */}
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      className="text-red-500 hover:text-red-700 transition p-2 rounded-full cursor-pointer"
-                      title="Supprimer cette étape"
-                    >
-                        <FiTrash size={20} />
-                    </button>
-                </div>
-              ))}
+                {/* Description de l'étape */}
+                <textarea
+                  {...register(`itinerary.${index}.description` as const, { required: "La description de l'étape est obligatoire" })}
+                  placeholder="Description de l'étape (obligatoire)"
+                  className="flex-1 px-3 py-2 border rounded-lg resize-none overflow-hidden focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
+                  onInput={autoResize}
+                />
+                {errors.itinerary?.[index]?.description && (
+                  <p className="text-red-600 text-sm mt-1">{errors.itinerary[index]?.description?.message}</p>
+                )}
 
-              <button
-                type="button"
-                onClick={() => append({ title: '', description: '' })}
-                className="self-start bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition cursor-pointer"
-              >
-                  Ajouter étape
-              </button>
+                {/* Bouton supprimer */}
+                <button
+                  type="button"
+                  onClick={() => remove(index)}
+                  className="text-red-500 hover:text-red-700 transition p-2 rounded-full cursor-pointer"
+                  title="Supprimer cette étape"
+                >
+                  <FiTrash size={20} />
+                </button>
+              </div>
+            ))}
+
+            <button
+              type="button"
+              onClick={() => append({ title: '', description: '' })}
+              className="self-start bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition cursor-pointer"
+            >
+              Ajouter étape
+            </button>
           </div>
 
           {/* GPX & Map */}
@@ -404,8 +428,8 @@ export default function HikeNew() {
               </div>
           </div>
 
-          <Button type="submit" disabled={loading || Object.keys(errors).length > 0}>
-              {loading ? 'En cours...' : 'Créer la randonnée'}
+          <Button type="submit" disabled={loading}>
+          {loading ? 'En cours...' : 'Créer la randonnée'}
           </Button>
       </form>
     </div>

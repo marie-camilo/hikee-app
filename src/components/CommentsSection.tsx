@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, FormEvent } from 'react';
-import { db } from '../lib/firebase';
+import React, { useState, useRef, useEffect, FormEvent } from "react";
+import { db } from "../lib/firebase";
 import {
   doc,
   addDoc,
@@ -7,14 +7,19 @@ import {
   deleteDoc,
   serverTimestamp,
   collection,
-  getDocs,
   onSnapshot,
   query,
   orderBy,
   Timestamp,
-} from 'firebase/firestore';
-import Button from './Button';
-import { FiTrash } from 'react-icons/fi';
+  arrayUnion,
+  arrayRemove,
+  Unsubscribe,
+} from "firebase/firestore";
+
+import Button from "./Button";
+import { FiTrash, FiHeart, FiCornerDownRight } from "react-icons/fi";
+import defaultAvatar from "../assets/default_user.png";
+import { useNavigate } from "react-router-dom";
 
 export interface Comment {
   id: string;
@@ -24,14 +29,17 @@ export interface Comment {
   createdAt?: Timestamp | null;
   updatedAt?: Timestamp | null;
   replies?: Comment[];
+  likes?: string[];
+  photoURL?: string | null;
 }
 
 interface CommentsSectionProps {
-  comments: Comment[];
+  comments?: Comment[];
   canComment: boolean;
   hikeId: string;
   userUid: string;
   userName: string;
+  userPhoto?: string | null;
 }
 
 export default function CommentsSection({
@@ -39,419 +47,430 @@ export default function CommentsSection({
                                           hikeId,
                                           userUid,
                                           userName,
+                                          userPhoto,
                                           canComment,
                                         }: CommentsSectionProps) {
   const [comments, setComments] = useState<Comment[]>(initialComments);
-  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-  const [editingTexts, setEditingTexts] = useState<{ [key: string]: string }>({});
-  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
-  const [editingReplyTexts, setEditingReplyTexts] = useState<{ [key: string]: string }>({});
-  const [newComment, setNewComment] = useState<string>('');
+  const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [replyTexts, setReplyTexts] = useState<{ [key: string]: string }>({});
+  const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editingTexts, setEditingTexts] = useState<Record<string, string>>({});
 
-  const editRef = useRef<HTMLTextAreaElement>(null);
-
-  const now = Timestamp.fromDate(new Date());
+  const editRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    if ((editingCommentId || editingReplyId) && editRef.current) {
-      editRef.current.focus();
-      editRef.current.selectionStart = editRef.current.value.length;
+    if (editRef.current) {
+      setTimeout(() => {
+        try {
+          editRef.current?.focus();
+          if ("selectionStart" in editRef.current) {
+            const el = editRef.current as HTMLTextAreaElement;
+            el.selectionStart = el.value.length;
+          }
+        } catch (e) {}
+      }, 50);
     }
-  }, [editingCommentId, editingReplyId]);
+  }, [editingCommentId, editingReplyId, replyingTo]);
 
-  // Charger les commentaires et leurs réponses
   useEffect(() => {
-    const commentsRef = collection(db, 'hikes', hikeId, 'comments');
-    const q = query(commentsRef, orderBy('createdAt', 'asc'));
+    const commentsRef = collection(db, "hikes", hikeId, "comments");
+    const q = query(commentsRef, orderBy("createdAt", "asc"));
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const comms = await Promise.all(
-        snapshot.docs.map(async (docSnap) => {
-          const data = docSnap.data();
-          const repliesSnap = await getDocs(
-            collection(db, 'hikes', hikeId, 'comments', docSnap.id, 'replies')
-          );
-          const replies: Comment[] = repliesSnap.docs.map((r) => {
-            const rData = r.data();
-            return {
-              id: r.id,
-              ...rData,
-              createdAt: rData.createdAt || null,
-              updatedAt: rData.updatedAt || null,
-            } as Comment;
-          });
+    const replyUnsubs: Record<string, Unsubscribe> = {};
+
+    const unsubComments = onSnapshot(q, (snapshot) => {
+      setComments((prev) => {
+        const currentIds = snapshot.docs.map((d) => d.id);
+
+        // Supprime les listeners des commentaires qui n'existent plus
+        Object.keys(replyUnsubs).forEach((cid) => {
+          if (!currentIds.includes(cid)) {
+            try {
+              replyUnsubs[cid]?.();
+            } catch {}
+            delete replyUnsubs[cid];
+          }
+        });
+
+        return snapshot.docs.map((d) => {
+          const data = d.data() as any;
+          const existing = prev.find((c) => c.id === d.id);
+
+          // Si le listener des replies n'existe pas, on le crée
+          if (!replyUnsubs[d.id]) {
+            const repliesRef = collection(db, "hikes", hikeId, "comments", d.id, "replies");
+            const qReplies = query(repliesRef, orderBy("createdAt", "asc"));
+            const unsubReplies = onSnapshot(qReplies, (snapR) => {
+              const replies: Comment[] = snapR.docs.map((r) => {
+                const rd = r.data() as any;
+                return {
+                  id: r.id,
+                  text: rd.text ?? "",
+                  authorUid: rd.authorUid ?? "",
+                  authorName: rd.authorName ?? "Anonyme",
+                  createdAt: rd.createdAt ?? null,
+                  updatedAt: rd.updatedAt ?? null,
+                  likes: Array.isArray(rd.likes) ? rd.likes : [],
+                  photoURL: rd.photoURL ?? null,
+                } as Comment;
+              });
+
+              // On merge les replies sans écraser les autres champs
+              setComments((prevC) =>
+                prevC.map((c) => (c.id === d.id ? { ...c, replies } : c))
+              );
+            });
+            replyUnsubs[d.id] = unsubReplies;
+          }
+
           return {
-            id: docSnap.id,
-            ...data,
-            createdAt: data.createdAt || null,
-            updatedAt: data.updatedAt || null,
-            replies: replies.sort((a, b) => (a.createdAt?.toMillis() || 0) - (b.createdAt?.toMillis() || 0)),
+            id: d.id,
+            text: data.text ?? "",
+            authorUid: data.authorUid ?? "",
+            authorName: data.authorName ?? "Anonyme",
+            createdAt: data.createdAt ?? null,
+            updatedAt: data.updatedAt ?? null,
+            likes: Array.isArray(data.likes) ? data.likes : [],
+            photoURL: data.photoURL ?? null,
+            replies: existing?.replies ?? [],
           } as Comment;
-        })
-      );
-      setComments(comms);
+        });
+      });
     });
 
-    return () => unsubscribe();
+    return () => {
+      try {
+        unsubComments();
+      } catch {}
+      Object.values(replyUnsubs).forEach((u) => {
+        try {
+          u();
+        } catch {}
+      });
+    };
   }, [hikeId]);
 
-  // Ajouter un commentaire
-  const handleAddComment = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  // Add a comment
+  const handleAddComment = async (e?: FormEvent) => {
+    if (e) e.preventDefault();
     const text = newComment.trim();
     if (!text) return;
 
     try {
-      await addDoc(collection(db, 'hikes', hikeId, 'comments'), {
+      await addDoc(collection(db, "hikes", hikeId, "comments"), {
         text,
         authorUid: userUid,
         authorName: userName,
+        photoURL: userPhoto ?? null,
+        likes: [],
         createdAt: serverTimestamp(),
       });
-      setNewComment('');
+      setNewComment("");
     } catch (err) {
-      console.error(err);
+      console.error("add comment error", err);
     }
   };
 
-  // Ajouter une réponse
+  // Add a reply under a comment
   const handleAddReply = async (commentId: string) => {
-    const text = replyTexts[commentId]?.trim();
+    const text = (replyTexts[commentId] || "").trim();
     if (!text) return;
 
-    const replyData = {
-      text,
-      authorUid: userUid,
-      authorName: userName,
-      createdAt: serverTimestamp(),
-    };
-
     try {
-      const docRef = await addDoc(
-        collection(db, 'hikes', hikeId, 'comments', commentId, 'replies'),
-        replyData
+      await addDoc(
+        collection(db, "hikes", hikeId, "comments", commentId, "replies"),
+        {
+          text,
+          authorUid: userUid,
+          authorName: userName,
+          photoURL: userPhoto ?? null,
+          createdAt: serverTimestamp(),
+        }
       );
-
-      setComments((prev) =>
-        prev.map((c) =>
-          c.id === commentId
-            ? {
-              ...c,
-              replies: [
-                ...(c.replies || []),
-                { id: docRef.id, text, authorUid: userUid, authorName: userName, createdAt: now },
-              ],
-            }
-            : c
-        )
-      );
-
-      setReplyTexts((prev) => ({ ...prev, [commentId]: '' }));
+      setReplyTexts((p) => ({ ...p, [commentId]: "" }));
       setReplyingTo(null);
     } catch (err) {
-      console.error(err);
+      console.error("add reply error", err);
     }
   };
 
-  // 🔹 Edition et suppression commentaire
-  const startEditingComment = (c: Comment) => {
-    setEditingCommentId(c.id);
-    setEditingTexts((prev) => ({ ...prev, [c.id]: c.text }));
-  };
-  const cancelEditingComment = () => {
-    if (editingCommentId) {
-      setEditingTexts((prev) => {
-        const copy = { ...prev };
-        delete copy[editingCommentId];
-        return copy;
-      });
+  const toggleLike = async (commentId: string, likes: string[] = []) => {
+    if (!userUid) {
+      navigate("/login");
+      return;
     }
-    setEditingCommentId(null);
+
+    try {
+      const refDoc = doc(db, "hikes", hikeId, "comments", commentId);
+      const already = likes.includes(userUid);
+      await updateDoc(refDoc, {
+        likes: already ? arrayRemove(userUid) : arrayUnion(userUid),
+      });
+    } catch (err) {
+      console.error("toggleLike error", err);
+    }
+  };
+
+  // Edit comment
+  const startEditComment = (c: Comment) => {
+    setEditingCommentId(c.id);
+    setEditingTexts({ ...editingTexts, [c.id]: c.text });
   };
   const saveEditComment = async (commentId: string) => {
-    const trimmed = editingTexts[commentId]?.trim();
-    if (!trimmed) return;
+    const t = (editingTexts[commentId] || "").trim();
+    if (!t) return;
     try {
-      await updateDoc(doc(db, 'hikes', hikeId, 'comments', commentId), {
-        text: trimmed,
+      await updateDoc(doc(db, "hikes", hikeId, "comments", commentId), {
+        text: t,
         updatedAt: serverTimestamp(),
       });
-      cancelEditingComment();
+      setEditingCommentId(null);
     } catch (err) {
-      console.error(err);
-    }
-  };
-  const deleteComment = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'hikes', hikeId, 'comments', id));
-    } catch (err) {
-      console.error(err);
+      console.error("saveEditComment", err);
     }
   };
 
-  // Edition et suppression replies
-  const startEditingReply = (reply: Comment) => {
+  // Edit reply
+  const startEditReply = (reply: Comment) => {
     setEditingReplyId(reply.id);
-    setEditingReplyTexts((prev) => ({ ...prev, [reply.id]: reply.text }));
-  };
-  const cancelEditingReply = () => {
-    if (editingReplyId) {
-      setEditingReplyTexts((prev) => {
-        const copy = { ...prev };
-        delete copy[editingReplyId];
-        return copy;
-      });
-    }
-    setEditingReplyId(null);
+    setEditingTexts({ ...editingTexts, [reply.id]: reply.text });
   };
   const saveEditReply = async (commentId: string, replyId: string) => {
-    const trimmed = editingReplyTexts[replyId]?.trim();
-    if (!trimmed) return;
-
+    const t = (editingTexts[replyId] || "").trim();
+    if (!t) return;
     try {
       await updateDoc(
-        doc(db, 'hikes', hikeId, 'comments', commentId, 'replies', replyId),
-        { text: trimmed, updatedAt: serverTimestamp() }
+        doc(db, "hikes", hikeId, "comments", commentId, "replies", replyId),
+        { text: t, updatedAt: serverTimestamp() }
       );
-
-      setComments(prev =>
-        prev.map(c =>
-          c.id === commentId
-            ? {
-              ...c,
-              replies: c.replies?.map(r =>
-                r.id === replyId
-                  ? { ...r, text: trimmed, updatedAt: Timestamp.fromDate(new Date()) }
-                  : r
-              )
-            }
-            : c
-        )
-      );
-
-      cancelEditingReply();
+      setEditingReplyId(null);
     } catch (err) {
-      console.error(err);
+      console.error("saveEditReply", err);
     }
   };
 
+  // Delete
+  const deleteComment = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "hikes", hikeId, "comments", id));
+    } catch (err) {
+      console.error("deleteComment", err);
+    }
+  };
   const deleteReply = async (commentId: string, replyId: string) => {
     try {
-      await deleteDoc(doc(db, 'hikes', hikeId, 'comments', commentId, 'replies', replyId));
-
-      // Mise à jour locale immédiate
-      setComments(prev =>
-        prev.map(c =>
-          c.id === commentId
-            ? { ...c, replies: c.replies?.filter(r => r.id !== replyId) }
-            : c
-        )
+      await deleteDoc(
+        doc(db, "hikes", hikeId, "comments", commentId, "replies", replyId)
       );
     } catch (err) {
-      console.error(err);
+      console.error("deleteReply", err);
     }
   };
 
-  const formatDate = (ts?: Timestamp | null) => {
-    if (!ts) return 'maintenant';
-    if ('toDate' in ts) return ts.toDate().toLocaleDateString('fr-FR', { dateStyle: 'medium' });
-    return 'maintenant';
-  };
+  const formatDate = (ts?: Timestamp | null) =>
+    ts?.toDate().toLocaleDateString("fr-FR", { dateStyle: "medium" }) ??
+    "maintenant";
 
   return (
     <div className="mt-8 bg-white shadow rounded-xl p-4 sm:p-6 space-y-4">
       <h3 className="text-xl font-semibold">Comments</h3>
 
-      {comments.length > 0 ? (
-        <ul className="space-y-3">
-          {comments.map((c) => (
-            <li key={c.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50 flex flex-col">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
-                <div className="flex-1">
-                  {editingCommentId === c.id ? (
-                    <textarea
-                      ref={editRef}
-                      className="w-full border border-gray-300 rounded-lg p-2 resize-none"
-                      value={editingTexts[c.id]}
-                      onChange={(e) => setEditingTexts(prev => ({ ...prev, [c.id]: e.target.value }))}
-                      rows={2}
-                    />
-                  ) : (
-                    <p className="text-gray-800">{c.text}</p>
-                  )}
-                  <p className="text-xs text-gray-500 mt-1">
-                    par {c.authorName} • {formatDate(c.createdAt)}
-                    {c.updatedAt && ' (édité)'}
-                  </p>
+      {comments.length === 0 && (
+        <p className="text-gray-500 text-sm">Aucun commentaire pour le moment</p>
+      )}
+
+      <ul className="space-y-4">
+        {comments.map((c) => (
+          <li
+            key={c.id}
+            className="bg-gray-50 border border-gray-200 p-4 rounded-lg"
+          >
+            <div className="flex gap-3 items-start">
+              <img
+                src={c.photoURL ?? defaultAvatar}
+                alt={c.authorName}
+                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+              />
+              <div className="flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="grow">
+                    {editingCommentId === c.id ? (
+                      <textarea
+                        ref={editRef as any}
+                        className="w-full border rounded-lg p-2"
+                        value={editingTexts[c.id] ?? ""}
+                        onChange={(e) =>
+                          setEditingTexts((p) => ({ ...p, [c.id]: e.target.value }))
+                        }
+                        rows={3}
+                      />
+                    ) : (
+                      <p className="text-gray-800">{c.text}</p>
+                    )}
+
+                    <p className="text-xs text-gray-500 mt-1">
+                      <strong className="text-gray-700">{c.authorName}</strong> •{" "}
+                      {formatDate(c.createdAt)}
+                      {c.updatedAt && " (édité)"}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-2">
+                    <button
+                      onClick={() => toggleLike(c.id, c.likes || [])}
+                      title="Like"
+                      className={`flex items-center gap-1 text-sm ${
+                        (c.likes || []).includes(userUid)
+                          ? "text-red-600"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      <FiHeart size={18} />
+                      <span className="text-xs">{(c.likes || []).length}</span>
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
-                  {userUid === c.authorUid && (
+                <div className="mt-3 flex items-center gap-2">
+                  {/* Edit/Delete si auteur */}
+                  {userUid === c.authorUid ? (
                     editingCommentId === c.id ? (
                       <>
-                        <Button
-                          type="button"
-                          onClick={() => saveEditComment(c.id)}
-                          variant="sage"
-                          size="md"
-                        >
+                        <Button onClick={() => saveEditComment(c.id)} variant="sage">
                           Sauvegarder
                         </Button>
-                        <Button
-                          type="button"
-                          onClick={cancelEditingComment}
-                          variant="moss"
-                          size="md"
-                        >
+                        <Button onClick={() => setEditingCommentId(null)} variant="moss">
                           Annuler
                         </Button>
                       </>
                     ) : (
                       <>
-                        <Button
-                          onClick={() => startEditingComment(c)}
-                          variant="sky"
-                          size="md"
-                        >
+                        <Button onClick={() => startEditComment(c)} variant="sky" size="sm">
                           Modifier
                         </Button>
-                        {canComment && (
-                          <Button
-                            onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
-                            variant="moss"
-                            size="md"
-                          >
-                            {replyingTo === c.id ? 'Annuler' : 'Répondre'}
-                          </Button>
-                        )}
                         <button
                           onClick={() => deleteComment(c.id)}
-                          className="text-slate-700 hover:text-red-700 p-2 rounded-full transition-colors cursor-pointer"
-                          title="Supprimer ce commentaire"
+                          className="text-red-600 p-2 rounded hover:bg-red-50"
+                          title="Supprimer"
                         >
-                          <FiTrash size={20} />
+                          <FiTrash />
                         </button>
                       </>
                     )
+                  ) : null}
+
+                  {/* Bouton Répondre uniquement si connecté */}
+                  {userUid && (
+                    <Button
+                      onClick={() => setReplyingTo((p) => (p === c.id ? null : c.id))}
+                      variant={replyingTo === c.id ? "moss" : "forest"}
+                      size="sm"
+                      className="ml-auto"
+                      icon={<FiCornerDownRight />}
+                    >
+                      {replyingTo === c.id ? "Annuler" : "Répondre"}
+                    </Button>
                   )}
                 </div>
-              </div>
 
-              {/* Input réponse */}
-              {replyingTo === c.id && (
-                <div className="mt-2 flex flex-col sm:flex-row gap-2">
-                  <input
-                    value={replyTexts[c.id] || ''}
-                    onChange={(e) => setReplyTexts(prev => ({ ...prev, [c.id]: e.target.value }))}
-                    placeholder="Écrire une réponse…"
-                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-                  />
-                  <Button
-                    onClick={() => handleAddReply(c.id)}
-                    variant="forest"
-                    size="md"
-                    arrow
-                  >
-                    Envoyer
-                  </Button>
-                </div>
-              )}
+                {replyingTo === c.id && userUid && (
+                  <div className="mt-3 flex gap-2 items-start">
+                    <input
+                      value={replyTexts[c.id] ?? ""}
+                      onChange={(e) => setReplyTexts((p) => ({ ...p, [c.id]: e.target.value }))}
+                      placeholder="Votre réponse…"
+                      className="flex-1 border rounded-lg px-3 py-2"
+                    />
+                    <Button onClick={() => handleAddReply(c.id)} variant="forest">
+                      Envoyer
+                    </Button>
+                  </div>
+                )}
 
-              {/* Réponses */}
-              {c.replies && c.replies.length > 0 && (
-                <ul className="ml-4 mt-2 space-y-2">
-                  {c.replies.map((r) => (
-                    <li key={r.id} className="border-l border-gray-300 pl-4 flex flex-col sm:flex-row justify-between gap-2">
-                      <div className="flex-1">
-                        {editingReplyId === r.id ? (
-                          <textarea
-                            ref={editRef}
-                            className="w-full border border-gray-300 rounded-lg p-2 resize-none"
-                            value={editingReplyTexts[r.id]}
-                            onChange={(e) => setEditingReplyTexts(prev => ({ ...prev, [r.id]: e.target.value }))}
-                            rows={2}
-                          />
-                        ) : (
-                          <p className="text-gray-800">{r.text}</p>
-                        )}
-                        <p className="text-xs text-gray-500 mt-1">
-                          par {r.authorName} • {formatDate(r.createdAt)}
-                          {r.updatedAt && ' (édité)'}
-                        </p>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2 mt-1 sm:mt-0 items-center">
-                        {userUid === r.authorUid && (
-                          editingReplyId === r.id ? (
-                            <>
-                              <Button
-                                type="button"
-                                onClick={() => saveEditComment(c.id)}
-                                variant="sage"
-                                size="md"
-                              >
-                                Sauvegarder
-                              </Button>
-                              <Button
-                                type="button"
-                                onClick={cancelEditingComment}
-                                variant="moss"
-                                size="md"
-                              >
-                                Annuler
-                              </Button>
-                            </>
+                <ul className="ml-6 mt-4 space-y-3 border-l pl-4 border-gray-300">
+                  {(c.replies || []).map((r) => (
+                    <li key={r.id} className="space-y-1">
+                      <div className="flex gap-3 items-start">
+                        <img
+                          src={r.photoURL ?? defaultAvatar}
+                          alt={r.authorName}
+                          className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                        />
+                        <div className="flex-1">
+                          {editingReplyId === r.id ? (
+                            <textarea
+                              ref={editRef as any}
+                              className="w-full border rounded-lg p-2"
+                              value={editingTexts[r.id] ?? ""}
+                              onChange={(e) =>
+                                setEditingTexts((p) => ({ ...p, [r.id]: e.target.value }))
+                              }
+                              rows={2}
+                            />
                           ) : (
-                            <>
-                              <Button
-                                onClick={() => startEditingComment(c)}
-                                variant="sky"
-                                size="sm"
-                              >
-                                Modifier
-                              </Button>
-                              <button
-                                onClick={() => deleteReply(c.id, r.id)}
-                                className="text-slate-700 hover:text-red-700 p-2 rounded-full transition-colors cursor-pointer"
-                                title="Supprimer cette réponse"
-                              >
-                                <FiTrash size={16} />
-                              </button>
-                            </>
-                          )
-                        )}
+                            <p className="text-gray-800">{r.text}</p>
+                          )}
+
+                          <p className="text-xs text-gray-500 mt-1">
+                            <strong className="text-gray-700">{r.authorName}</strong> •{" "}
+                            {formatDate(r.createdAt)}
+                            {r.updatedAt && " (édité)"}
+                          </p>
+
+                          <div className="mt-2 flex gap-2 items-center">
+                            {userUid === r.authorUid ? (
+                              editingReplyId === r.id ? (
+                                <>
+                                  <Button
+                                    onClick={() => saveEditReply(c.id, r.id)}
+                                    variant="sage"
+                                    size="sm"
+                                  >
+                                    Sauvegarder
+                                  </Button>
+                                  <Button onClick={() => setEditingReplyId(null)} variant="moss" size="sm">
+                                    Annuler
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <Button onClick={() => startEditReply(r)} variant="sky" size="sm">
+                                    Modifier
+                                  </Button>
+                                  <button
+                                    onClick={() => deleteReply(c.id, r.id)}
+                                    className="text-red-600 p-2 rounded hover:bg-red-50"
+                                    title="Supprimer"
+                                  >
+                                    <FiTrash />
+                                  </button>
+                                </>
+                              )
+                            ) : null}
+                          </div>
+                        </div>
                       </div>
                     </li>
                   ))}
                 </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="text-gray-500 text-sm">Aucun commentaire pour le moment</p>
-      )}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
 
-      {/* Ajouter commentaire */}
       {canComment && (
-        <form onSubmit={handleAddComment} className="flex flex-col sm:flex-row gap-2 mt-2">
+        <form onSubmit={handleAddComment} className="flex gap-2">
           <input
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Ajouter un commentaire…"
-            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            required
-            minLength={1}
-            maxLength={500}
+            className="flex-1 border rounded-lg px-3 py-2"
           />
-          <Button
-            onClick={() => handleAddReply(c.id)}
-            variant="forest"
-            size="md"
-            arrow
-          >
+          <Button type="submit" variant="forest">
             Envoyer
           </Button>
         </form>

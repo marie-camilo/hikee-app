@@ -47,7 +47,7 @@ const Footer = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-[#4A4A4A]">
-            <p>© 2024 HIKEE. All rights reserved.</p>
+            <p>© 2025 HIKEE. All rights reserved.</p>
             <p className="text-[#4A4A4A]/70">Made by <a href="https://marie-camilo.fr/">Marie CAMILO--MARCHAL</a> & Charlotte DUVERGER</p>
           </div>
         </div>

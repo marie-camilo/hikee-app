@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Polyline, useMap } from 'react-leaflet';
 import L, { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -9,14 +9,16 @@ interface HikeMapProps {
   gpxPath?: string | null;
 }
 
-// Composant pour centrer la carte automatiquement
+// Composant pour centrer automatiquement la carte sur les coordonnées
 function FitBounds({ coords }: { coords: [number, number][] }) {
   const map = useMap();
+
   useEffect(() => {
     if (coords.length === 0) return;
     const bounds = L.latLngBounds(coords.map(([lat, lng]) => [lat, lng]));
     map.fitBounds(bounds, { padding: [50, 50] });
   }, [coords, map]);
+
   return null;
 }
 
@@ -25,19 +27,18 @@ export default function HikeMap({ gpxPath }: HikeMapProps) {
 
   useEffect(() => {
     const loadGpx = async () => {
-      try {
-        let url: string;
-        if (gpxPath) {
-          url = gpxPath.startsWith('http')
-            ? gpxPath
-            : await getDownloadURL(storageRef(storage, gpxPath));
-        } else {
-          url = '/default.gpx'; // fallback
-        }
+      if (!gpxPath) return;
 
-        const res = await fetch(url);
-        const text = await res.text();
+      try {
+        // Récupération de l'URL signée depuis Firebase Storage
+        const url = gpxPath.startsWith('http')
+          ? gpxPath
+          : await getDownloadURL(storageRef(storage, gpxPath));
+
+        // Parser le GPX côté client
         const parser = new DOMParser();
+        const response = await fetch(url);
+        const text = await response.text();
         const xml = parser.parseFromString(text, 'application/xml');
 
         const trkpts: [number, number][] = Array.from(xml.getElementsByTagName('trkpt')).map(pt => [
@@ -45,8 +46,12 @@ export default function HikeMap({ gpxPath }: HikeMapProps) {
           parseFloat(pt.getAttribute('lon') || '0'),
         ]);
 
-        if (trkpts.length) setCoords(trkpts);
-        else console.warn('GPX vide ou non reconnu');
+        if (trkpts.length === 0) {
+          console.warn('GPX vide ou non reconnu');
+          return;
+        }
+
+        setCoords(trkpts);
       } catch (err) {
         console.error('Impossible de charger le GPX', err);
       }
@@ -55,13 +60,14 @@ export default function HikeMap({ gpxPath }: HikeMapProps) {
     loadGpx();
   }, [gpxPath]);
 
+  // Centre initial si coords non disponibles
   const initialCenter: LatLngExpression = coords.length ? coords[0] : [46, 6];
 
   return (
     <div style={{ height: '100%', width: '100%' }}>
       <MapContainer center={initialCenter} zoom={13} style={{ height: '100%', width: '100%' }}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        {coords.length > 0 &&
+        {coords.length > 0 && (
           <Polyline
             positions={coords}
             pathOptions={{
@@ -73,7 +79,7 @@ export default function HikeMap({ gpxPath }: HikeMapProps) {
               lineJoin: 'round',
             }}
           />
-        }
+        )}
         <FitBounds coords={coords} />
       </MapContainer>
     </div>

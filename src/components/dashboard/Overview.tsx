@@ -209,7 +209,7 @@ export default function Overview() {
       <header className="pt-6">
         <h1 className="w-full font-bold uppercase tracking-tight text-[var(--forest-dark)] leading-none text-[12vw] sm:text-[9vw] md:text-[5vw]">
           <SplitText
-            text={`Welcome Back, ${user.displayName?.split(' ')[0] || 'Hiker'}!`}
+            text={`Welcome, ${user.displayName?.split(' ')[0] || 'Hiker'}!`}
             tag="span"
             splitType="chars"
             from={{ opacity: 0, y: 40 }}

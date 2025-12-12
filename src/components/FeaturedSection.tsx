@@ -4,16 +4,13 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
-// --- Définitions des Couleurs Centralisées ---
 const COLORS_MAP = {
   'background': '#F5F3EF',
   'slate': '#4A4A4A',
-  // Couleurs secondaires
   'white': '#FFFFFF',
   'gray-light': '#6B7280',
   'border-light': '#E5E7EB',
   'filter-active-bg': '#dfddd7',
-
   'terracotta': '#D87855',
   'sky': '#8BB4C9',
   'sunset': '#E8A87C',
@@ -24,7 +21,6 @@ const COLORS_MAP = {
   'stone': '#dfddd7'
 };
 
-// Types
 type CardData = {
   stat?: string;
   description: string;
@@ -232,14 +228,12 @@ const featuredData: FeatureCategory[] = [
   },
 ];
 
-// Arrow Icon (pointing to top-right)
 const ArrowIcon: React.FC = () => (
   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17" />
   </svg>
 );
 
-// FeatureCard Component
 const FeatureCard: React.FC<{ card: CardData }> = ({ card }) => {
   const accentColors = {
     terracotta: COLORS_MAP.terracotta,
@@ -327,95 +321,47 @@ const FeatureCard: React.FC<{ card: CardData }> = ({ card }) => {
   );
 };
 
+
 const FeaturedSection: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<FeatureCategory>(featuredData[0]);
-  const cardsRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
-  const [hasAnimated, setHasAnimated] = useState(false);
-
-  useEffect(() => {
-    if (!hasAnimated && sectionRef.current) {
-      const ctx = gsap.context(() => {
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: sectionRef.current,
-            start: 'top 80%',
-            end: 'top 20%',
-            toggleActions: 'play none none none',
-          }
-        });
-
-        tl.fromTo(
-          '.filter-btn',
-          { opacity: 0, y: -20 },
-          { opacity: 1, y: 0, duration: 0.6, stagger: 0.08, ease: 'power2.out' }
-        )
-          .fromTo(
-            contentRef.current?.children || [],
-            { opacity: 0, x: -30 },
-            { opacity: 1, x: 0, duration: 0.8, stagger: 0.1, ease: 'power3.out' },
-            '-=0.4'
-          )
-          .fromTo(
-            '.feature-card',
-            { opacity: 0, scale: 0.9, y: 30 },
-            { opacity: 1, scale: 1, y: 0, duration: 0.8, stagger: 0.1, ease: 'back.out(1.4)' },
-            '-=0.6'
-          );
-      }, sectionRef);
-
-      setHasAnimated(true);
-      return () => ctx.revert();
-    }
-  }, [hasAnimated]);
-
-  useEffect(() => {
-    if (hasAnimated) {
-      const ctx = gsap.context(() => {
-        const cards = cardsRef.current?.querySelectorAll('.feature-card');
-        const content = contentRef.current?.children;
-
-        gsap.fromTo(
-          content || [],
-          { opacity: 0, x: -20 },
-          { opacity: 1, x: 0, duration: 0.6, stagger: 0.08, ease: 'power2.out' }
-        );
-
-        gsap.fromTo(
-          cards || [],
-          { opacity: 0, scale: 0.95, y: 20 },
-          { opacity: 1, scale: 1, y: 0, duration: 0.7, stagger: 0.08, ease: 'power3.out' }
-        );
-      });
-
-      return () => ctx.revert();
-    }
-  }, [activeCategory, hasAnimated]);
 
   useEffect(() => {
     if (!sectionRef.current) return;
 
     const ctx = gsap.context(() => {
-      // Cards animation
+
+      gsap.set(".filter-btn, .feature-content, .feature-card", { opacity: 0 });
+
+
+      gsap.set(".feature-card, .feature-content", { willChange: 'transform, opacity, filter' });
+
+
+      gsap.fromTo(
+        '.filter-btn',
+        { opacity: 0, y: -20 },
+        { opacity: 1, y: 0, duration: 0.6, stagger: 0.08, ease: 'power2.out' }
+      );
+
+
       ScrollTrigger.batch(".feature-card", {
-        start: "top 90%",
-        interval: 0.12,
+        start: "top 95%",
+        once: true,
         onEnter: (batch) => {
           gsap.fromTo(
             batch,
             {
               opacity: 0,
               y: 50,
-              scale: 0.94,
-              filter: "blur(6px)"
+              scale: 0.96,
+              filter: "blur(4px)"
             },
             {
               opacity: 1,
               y: 0,
               scale: 1,
               filter: "blur(0px)",
-              duration: 1.35,
+              duration: 1.2,
               ease: "power4.out",
               stagger: {
                 each: 0.1,
@@ -427,7 +373,8 @@ const FeaturedSection: React.FC = () => {
       });
 
       ScrollTrigger.batch(".feature-content", {
-        start: "top 92%",
+        start: "top 95%",
+        once: true,
         onEnter: (batch) => {
           gsap.fromTo(
             batch,
@@ -440,10 +387,10 @@ const FeaturedSection: React.FC = () => {
               opacity: 1,
               x: 0,
               filter: "blur(0px)",
-              duration: 1.2,
+              duration: 1.1,
               ease: "power4.out",
               stagger: {
-                each: 0.12,
+                each: 0.1,
                 from: "start"
               }
             }
@@ -456,6 +403,38 @@ const FeaturedSection: React.FC = () => {
     return () => ctx.revert();
   }, []);
 
+
+  useEffect(() => {
+
+    gsap.killTweensOf(".feature-content, .feature-card");
+
+    const ctx = gsap.context(() => {
+
+      const exitTl = gsap.timeline();
+      exitTl.to(".feature-content, .feature-card", {
+        opacity: 0,
+        y: 10,
+        duration: 0.15,
+        stagger: 0.03,
+        ease: 'power2.in',
+      });
+
+
+      gsap.fromTo(
+        ".feature-content",
+        { opacity: 0, x: -20, filter: "blur(2px)" },
+        { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.5, stagger: 0.08, ease: 'power2.out', delay: 0.1 }
+      );
+
+      gsap.fromTo(
+        ".feature-card",
+        { opacity: 0, scale: 0.98, y: 15, filter: "blur(4px)" },
+        { opacity: 1, scale: 1, y: 0, filter: "blur(0px)", duration: 0.6, stagger: 0.06, ease: 'back.out(1.2)', delay: 0.2 }
+      );
+    });
+
+    return () => ctx.revert();
+  }, [activeCategory]);
 
   return (
     <section
@@ -482,9 +461,9 @@ const FeaturedSection: React.FC = () => {
         </div>
 
         <div className="grid lg:grid-cols-[1fr_1.5fr] gap-12 lg:gap-20 items-start">
-          {/* Content Section */}
-          <div ref={contentRef} className="space-y-6 feature-content">
-            <div className="flex items-start gap-3">
+
+          <div className="space-y-6">
+            <div className="flex items-start gap-3 feature-content">
               <p className="text-sm font-medium" style={{ color: COLORS_MAP['gray-light'] }}>
                 Who We Are at Hikee
               </p>
@@ -504,9 +483,9 @@ const FeaturedSection: React.FC = () => {
               {activeCategory.subtitle}
             </p>
 
-            <div className="pt-4">
+            <div className="pt-4 feature-content">
               <button
-                className="px-6 py-3 rounded-full font-medium text-sm transition-all duration-300 hover:scale-105 feature-content"
+                className="px-6 py-3 rounded-full font-medium text-sm transition-all duration-300 hover:scale-105"
                 style={{
                   backgroundColor: COLORS_MAP.slate,
                   color: COLORS_MAP.white,
@@ -517,9 +496,10 @@ const FeaturedSection: React.FC = () => {
             </div>
           </div>
 
-          <div ref={cardsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
             {activeCategory.cards.map((card, index) => (
-              <div key={index} className="feature-card">
+              <div key={`${activeCategory.id}-${index}`} className="feature-card">
                 <FeatureCard card={card} />
               </div>
             ))}

@@ -1,6 +1,6 @@
 [
   {
-    "origin": ["http://localhost:5173"],
+    "origin": ["http://localhost:5173", "https://hikee.marie-camilo.fr"],
     "method": ["GET", "HEAD", "PUT", "POST", "DELETE"],
     "maxAgeSeconds": 3600,
     "responseHeader": ["Content-Type", "Authorization"]

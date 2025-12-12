@@ -20,7 +20,7 @@ export default function App() {
           duration: 4000,
           className: 'font-medium',
           style: {
-            background: 'rgba(15, 23, 42, 0.8)',
+            background: 'rgba(15, 23, 42, 0.95)',
             backdropFilter: 'blur(14px)',
             WebkitBackdropFilter: 'blur(14px)',
             border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -30,20 +30,23 @@ export default function App() {
           },
           success: {
             style: {
-              background: 'rgba(255,255,255,0.25)',
-              borderColor: 'rgba(69,71,70,0.5)'
+              background: 'rgba(122, 155, 118, 0.95)',
+              borderColor: 'rgba(44, 62, 46, 0.5)',
+              color: '#f8fafc',
             },
-            iconTheme: { primary: '#22d172', secondary: '#166534' },
+            iconTheme: { primary: '#ffffff', secondary: '#A8B99C' },
           },
           error: {
             style: {
-              background: 'rgba(255,255,255,0.25)',
-              borderColor: 'rgba(239, 68, 68, 0.5)'
+              background: 'rgba(239, 68, 68, 0.95)',
+              borderColor: 'rgba(127, 29, 29, 0.5)',
+              color: '#f8fafc',
             },
-            iconTheme: { primary: '#f87171', secondary: '#7f1d1d' },
+            iconTheme: { primary: '#ffffff', secondary: '#7f1d1d' },
           },
         }}
       />
+
     </div>
   )
 }

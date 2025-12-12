@@ -359,28 +359,43 @@ export default function HikeEdit() {
         </div>
 
         {/* Distance & Dénivelé */}
+        {/* Distance & Dénivelé avec sliders */}
         <div className="grid md:grid-cols-2 gap-4">
+          {/* Distance */}
           <div className="flex flex-col">
             <label className="mb-2 font-semibold text-gray-700">Distance (km)</label>
-            <input
-              type="number"
-              step="0.1"
-              {...register('distanceKm', { valueAsNumber: true })}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
-            />
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min={0}
+                max={500}
+                step={0.1}
+                {...register('distanceKm', { valueAsNumber: true })}
+                className="w-full accent-[#2C3E2E]"
+              />
+              <span className="w-12 text-right">{watch('distanceKm')?.toFixed(1)} km</span>
+            </div>
             {errors.distanceKm && <p className="text-red-600 text-sm mt-1">{errors.distanceKm.message}</p>}
           </div>
+
+          {/* Dénivelé */}
           <div className="flex flex-col">
             <label className="mb-2 font-semibold text-gray-700">Dénivelé (m)</label>
-            <input
-              type="number"
-              step="1"
-              {...register('elevationGainM', { valueAsNumber: true })}
-              className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-1 focus:ring-gray-400 transition"
-            />
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min={0}
+                max={5000}
+                step={10}
+                {...register('elevationGainM', { valueAsNumber: true })}
+                className="w-full accent-[#2C3E2E]"
+              />
+              <span className="w-16 text-right">{watch('elevationGainM')} m</span>
+            </div>
             {errors.elevationGainM && <p className="text-red-600 text-sm mt-1">{errors.elevationGainM.message}</p>}
           </div>
         </div>
+
 
         {/* Itinéraire */}
         <div className="flex flex-col space-y-4">

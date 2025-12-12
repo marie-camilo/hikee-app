@@ -57,7 +57,7 @@ export default function Home() {
               "discover new trails",
               { img: "/images/golden-hour.webp" },
               "and breathe",
-              { img: "/images/cerf.JPG", caption: "Cold Wind" },
+              { img: "/images/friends-bivouac.webp", caption: "friends" },
               "the pure air."
             ]}
           </ScrollReveal>
